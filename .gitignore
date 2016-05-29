@@ -1,0 +1,10 @@
+target/
+.classpath
+.project
+.settings/
+dumps/
+data/
+log/
+.Rhistory
+filter/
+*.pem
