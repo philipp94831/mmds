@@ -1,3 +1,5 @@
+import sys
+
 def uprint(*objects, sep=' ', end='\n', file=sys.stdout):
     enc = file.encoding
     if enc == 'UTF-8':

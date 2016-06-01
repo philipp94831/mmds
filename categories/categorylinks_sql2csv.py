@@ -1,7 +1,6 @@
-import sys
 import utils
 
-def categorylinks_sql2csv(allCateogriesFileName, subcatsFileName, neededCategoriesFileName):
+def categorylinks_sql2csv(inputFileName, pagesFileName, subcatsFileName):
 	STATE_OUTSIDE = 1
 	STATE_IN_ENTRY = 2
 	STATE_IN_STRING = 3
@@ -12,18 +11,18 @@ def categorylinks_sql2csv(allCateogriesFileName, subcatsFileName, neededCategori
 	readBytes = 0
 	isNextCharExcaped = False
 
-	with open(allCateogriesFileName, encoding='utf8') as dataFile:
-		with open(treeDumpFileName, 'a+', encoding='utf8') as outFile:
+	with open(inputFileName, encoding='latin-1') as inputFile:
+		with open(pagesFileName, 'a+', encoding='utf8') as pagesFile:
 			with open(subcatsFileName, 'a+', encoding='utf8') as subcatsFile:
 				while True:
 					# jump to INSERT INTO
 					expectedBeginning = "INSERT INTO"
 					while True:
-						lineBeginning = dataFile.read(len(expectedBeginning))
+						lineBeginning = inputFile.read(len(expectedBeginning))
 						#print (lineBeginning)
 						if lineBeginning == "" or lineBeginning == expectedBeginning:
 							break
-						dataFile.readline() # read and throw rest of the line
+						inputFile.readline() # read and throw rest of the line
 
 					# we are now in expected line
 					currentState = STATE_OUTSIDE
@@ -31,7 +30,7 @@ def categorylinks_sql2csv(allCateogriesFileName, subcatsFileName, neededCategori
 					parts = []
 
 					while True:
-						ch = dataFile.read(1)
+						ch = inputFile.read(1)
 						readBytes += 1
 						if ch == "":
 							print ("EOF")
@@ -41,7 +40,7 @@ def categorylinks_sql2csv(allCateogriesFileName, subcatsFileName, neededCategori
 							entryBuffer = ""
 							if ch == "\n":
 								processedLines += 1
-								print (str(processedLines) + ". line processed, " + sizeof_fmt(readBytes) + " read")						
+								print (str(processedLines) + ". line processed, " + utils.sizeof_fmt(readBytes) + " read")						
 							elif ch == "(":
 								currentState = STATE_IN_ENTRY
 						elif currentState == STATE_IN_ENTRY:
@@ -58,7 +57,7 @@ def categorylinks_sql2csv(allCateogriesFileName, subcatsFileName, neededCategori
 								if parts[6] == "subcat":
 									print(";".join([parts[0], parts[1]]), file=subcatsFile)
 								else:
-									print(";".join([parts[0], parts[1], parts[6]]), file=outFile)
+									print(";".join([parts[0], parts[1], parts[6]]), file=pagesFile)
 								
 								parts = []
 								currentState = STATE_OUTSIDE
@@ -82,8 +81,8 @@ def main():
 		'data/enwiki-20160407-categorylinks.sql',
 		
 		# output
-		'results/categorylinks_by_line.csv',
-		'results/categorylinks_subcats_by_line.csv'
+		'results/2_categorylinks_by_line.csv',
+		'results/2_categorylinks_subcats_by_line.csv'
 	)
 
 

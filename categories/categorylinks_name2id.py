@@ -27,11 +27,11 @@ def categorylinks_name2id(subcatsFileName, categoriesFileName, outputFileName):
 def main():
 	categorylinks_name2id(
 		# input
-		'data/categorylinks_subcats_by_line.csv',
-		'data/categories_by_line.csv',		
+		'results/categorylinks_subcats_by_line.csv',
+		'results/categories_by_line.csv',		
 
 		# output
-		'data/categorylinks_subcats_ids.csv',
+		'results/categorylinks_subcats_ids.csv',
 	)
 
 if __name__ == "__main__":
