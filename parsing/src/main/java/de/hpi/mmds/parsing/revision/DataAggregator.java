@@ -1,4 +1,4 @@
-package de.hpi.mmds.cf;
+package de.hpi.mmds.parsing.revision;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -21,16 +21,19 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 
-import de.hpi.mmds.parsing.Revision;
+import de.hpi.mmds.SparkUtil;
+import de.hpi.mmds.parsing.revision.Revision;
 import scala.Tuple2;
 
 public class DataAggregator {
 
+	private static final String INPUT_DIR = "data/";
 	private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
+	private final static String OUTPUT_DIR = "../cf/data/final/";
 
 	public static void main(String[] args) {
 		try (JavaSparkContext jsc = SparkUtil.getContext()) {
-			aggregate(jsc, "data/raw/");
+			aggregate(jsc, INPUT_DIR);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -106,7 +109,7 @@ public class DataAggregator {
 						return DATE_FORMAT.parse(v1.getTimestamp()).compareTo(threshold) >= 0;
 					}
 				});
-				aggregate("data/final/test_" + file.getName(), test);
+				aggregate(OUTPUT_DIR + "test_" + file.getName(), test);
 				JavaRDD<Revision> training = revisions.filter(new Function<Revision, Boolean>() {
 
 					/**
@@ -119,7 +122,7 @@ public class DataAggregator {
 						return DATE_FORMAT.parse(v1.getTimestamp()).compareTo(threshold) < 0;
 					}
 				});
-				aggregate("data/final/training_" + file.getName(), training);
+				aggregate(OUTPUT_DIR +"training_" + file.getName(), training);
 			}
 		}
 	}

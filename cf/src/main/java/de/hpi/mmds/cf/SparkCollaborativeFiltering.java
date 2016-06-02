@@ -34,7 +34,7 @@ import org.apache.spark.mllib.recommendation.MatrixFactorizationModel;
 import org.apache.spark.mllib.recommendation.Rating;
 import org.slf4j.Logger;
 
-import de.hpi.mmds.parsing.Revision;
+import de.hpi.mmds.SparkUtil;
 import scala.Tuple2;
 
 @SuppressWarnings("unused")

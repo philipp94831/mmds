@@ -1,4 +1,4 @@
-package de.hpi.mmds.parsing;
+package de.hpi.mmds.parsing.revision;
 
 import java.io.File;
 import java.io.FileWriter;

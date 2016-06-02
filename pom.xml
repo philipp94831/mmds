@@ -1,11 +1,11 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>de.hpi.mmds</groupId>
-  <artifactId>cf</artifactId>
+  <artifactId>wiki</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
 
   <name>cf</name>
   <url>http://maven.apache.org</url>
@@ -36,22 +36,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.github.philipp94831</groupId>
-      <artifactId>stax2parser</artifactId>
-      <version>0.0.4</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.mahout</groupId>
-      <artifactId>mahout-core</artifactId>
-      <version>0.9</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.5</version>
@@ -72,10 +56,12 @@
       <artifactId>spark-mllib_2.10</artifactId>
       <version>1.6.1</version>
     </dependency>
-    <dependency>
-      <groupId>org.jsoup</groupId>
-      <artifactId>jsoup</artifactId>
-      <version>1.8.3</version>
-    </dependency>
   </dependencies>
+  <modules>
+    <module>cf</module>
+    <module>lda</module>
+    <module>core</module>
+    <module>parsing</module>
+    <module>categories</module>
+  </modules>
 </project>

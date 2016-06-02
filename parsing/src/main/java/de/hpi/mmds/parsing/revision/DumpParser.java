@@ -1,4 +1,4 @@
-package de.hpi.mmds.parsing;
+package de.hpi.mmds.parsing.revision;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,6 +23,8 @@ import com.github.philipp94831.stax2parser.Stax2Parser;
 
 public class DumpParser {
 
+	private static final String INPUT_DIR = "dumps/";
+	private static final String OUTPUT_DIR = "data/";
 	private static final Logger LOGGER = Logger.getLogger(DumpParser.class.getName());
 
 	public static void main(String[] args) {
@@ -30,8 +32,8 @@ public class DumpParser {
 		try {
 			Document raw = Jsoup.connect("https://dumps.wikimedia.org/enwiki/20160407/").get();
 			Elements elements = raw.select("body > ul > li:nth-child(10) > ul > li.file > a");
-			new File("data/raw/").mkdir();
-			DumpWriter out = new DumpWriter("data/raw/data", 51, 51_000_000L);
+			new File(OUTPUT_DIR).mkdir();
+			DumpWriter out = new DumpWriter(OUTPUT_DIR + "data", 51, 51_000_000L);
 			DumpHandler handler = new DumpHandler(out);
 			Stax2Parser parser = new Stax2Parser(handler);
 			List<Element> files = new ArrayList<>();
@@ -45,7 +47,7 @@ public class DumpParser {
 			for (Element element : files) {
 				String name = element.ownText();
 				LOGGER.info("Parsing file " + i + "/" + files.size() + ": " + name);
-				File file = new File("dumps/" + name);
+				File file = new File(INPUT_DIR + name);
 				if (!file.exists()) {
 					String _url = element.attr("href");
 					URL url = new URL("https://dumps.wikimedia.org" + _url);
