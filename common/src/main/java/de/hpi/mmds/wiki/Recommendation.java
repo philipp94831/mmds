@@ -1,4 +1,4 @@
-package de.hpi.mmds.wiki.common;
+package de.hpi.mmds.wiki;
 
 
 public class Recommendation {

@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.apache.spark.api.java.JavaRDD;
 
-import de.hpi.mmds.wiki.common.Recommendation;
-import de.hpi.mmds.wiki.common.Recommender;
+import de.hpi.mmds.wiki.Recommendation;
+import de.hpi.mmds.wiki.Recommender;
 
 public class LDA implements Recommender {
 

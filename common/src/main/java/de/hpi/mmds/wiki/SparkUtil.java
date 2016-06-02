@@ -1,4 +1,4 @@
-package de.hpi.mmds.wiki.common;
+package de.hpi.mmds.wiki;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;

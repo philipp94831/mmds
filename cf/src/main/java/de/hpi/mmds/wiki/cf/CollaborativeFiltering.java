@@ -34,13 +34,13 @@ import org.apache.spark.mllib.recommendation.MatrixFactorizationModel;
 import org.apache.spark.mllib.recommendation.Rating;
 import org.slf4j.Logger;
 
-import de.hpi.mmds.wiki.common.Recommendation;
-import de.hpi.mmds.wiki.common.Recommender;
-import de.hpi.mmds.wiki.common.SparkUtil;
+import de.hpi.mmds.wiki.Recommendation;
+import de.hpi.mmds.wiki.Recommender;
+import de.hpi.mmds.wiki.SparkUtil;
 import scala.Tuple2;
 
 @SuppressWarnings("unused")
-public class SparkCollaborativeFiltering implements Serializable, Recommender {
+public class CollaborativeFiltering implements Serializable, Recommender {
 
 	private static final long serialVersionUID = 5290472017062948755L;
 	private static final int RANK = 35;
@@ -55,7 +55,7 @@ public class SparkCollaborativeFiltering implements Serializable, Recommender {
 	private static final double RECOMMEND_THRESHOLD = 0;
 	private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
 
-	public SparkCollaborativeFiltering(JavaSparkContext jsc, String filterDir, String path) {
+	public CollaborativeFiltering(JavaSparkContext jsc, String filterDir, String path) {
 		logger = jsc.sc().log();
 		JavaRDD<String> data = jsc.textFile(path);
 		JavaRDD<Rating> ratings = data.map(new Function<String, Rating>() {
@@ -82,7 +82,7 @@ public class SparkCollaborativeFiltering implements Serializable, Recommender {
 		}
 	}
 
-	public SparkCollaborativeFiltering(JavaSparkContext jsc, String filterDir) {
+	public CollaborativeFiltering(JavaSparkContext jsc, String filterDir) {
 		logger = jsc.sc().log();
 		this.model = MatrixFactorizationModel.load(jsc.sc(), filterDir);
 		logger.info("Model loaded");
@@ -106,7 +106,7 @@ public class SparkCollaborativeFiltering implements Serializable, Recommender {
 
 	public static void main(String[] args) {
 		try (JavaSparkContext jsc = SparkUtil.getContext()) {
-			SparkCollaborativeFiltering cf = new SparkCollaborativeFiltering(jsc, FILTER_DIR, TRAINING_DATA);
+			CollaborativeFiltering cf = new CollaborativeFiltering(jsc, FILTER_DIR, TRAINING_DATA);
 			cf.evaluate(jsc, 200);
 			// readConsole(cf);
 		} catch(Exception e) {
@@ -116,7 +116,7 @@ public class SparkCollaborativeFiltering implements Serializable, Recommender {
 
 	
 
-	private static void readConsole(SparkCollaborativeFiltering cf) {
+	private static void readConsole(CollaborativeFiltering cf) {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		String s;
 		final String q = "Enter user id: ";

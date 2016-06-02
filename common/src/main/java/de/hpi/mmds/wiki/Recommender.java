@@ -1,4 +1,4 @@
-package de.hpi.mmds.wiki.common;
+package de.hpi.mmds.wiki;
 
 import java.util.List;
 

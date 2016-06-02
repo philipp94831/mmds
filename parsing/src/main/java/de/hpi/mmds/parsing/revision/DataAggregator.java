@@ -22,7 +22,7 @@ import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 
 import de.hpi.mmds.parsing.revision.Revision;
-import de.hpi.mmds.wiki.common.SparkUtil;
+import de.hpi.mmds.wiki.SparkUtil;
 import scala.Tuple2;
 
 public class DataAggregator {
