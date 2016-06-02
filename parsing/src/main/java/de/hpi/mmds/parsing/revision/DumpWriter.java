@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import org.apache.commons.io.FileUtils;
+
 public class DumpWriter {
 
 	private final TreeMap<Long, FileWriter> outs = new TreeMap<>();
@@ -13,7 +15,7 @@ public class DumpWriter {
 	public DumpWriter(String fileName, int numPartitions, long max) throws IOException {
 		for (int i = 0; i < numPartitions; i++) {
 			File file = new File(fileName + i + ".txt");
-			file.delete();
+			FileUtils.forceDelete(file);
 			outs.put(i * max / numPartitions, new FileWriter(file));
 		}
 	}

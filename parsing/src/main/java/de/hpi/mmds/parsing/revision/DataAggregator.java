@@ -27,7 +27,7 @@ import scala.Tuple2;
 
 public class DataAggregator {
 
-	private static final String INPUT_DIR = "data/";
+	private static final String INPUT_DIR = "data/raw/";
 	private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
 	private final static String OUTPUT_DIR = "../cf/data/final/";
 
