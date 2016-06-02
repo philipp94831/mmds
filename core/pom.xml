@@ -26,5 +26,4 @@
       <version>${project.version}</version>
     </dependency>
   </dependencies>
-  <packaging>pom</packaging>
 </project>
