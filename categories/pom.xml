@@ -5,8 +5,9 @@
   <parent>
     <groupId>de.hpi.mmds</groupId>
     <artifactId>wiki</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>${project.version}</version>
   </parent>
+  <groupId>${parent.groupId}.wiki</groupId>
   <artifactId>categories</artifactId>
   <name>categories</name>
   <url>http://maven.apache.org</url>
@@ -14,10 +15,5 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <dependencies>
-    <dependency>
-      <artifactId>core</artifactId>
-      <groupId>${project.groupId}</groupId>
-      <version>${project.version}</version>
-    </dependency>
   </dependencies>
 </project>

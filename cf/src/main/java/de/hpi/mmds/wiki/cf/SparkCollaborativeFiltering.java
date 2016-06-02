@@ -1,4 +1,4 @@
-package de.hpi.mmds.cf;
+package de.hpi.mmds.wiki.cf;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,11 +34,13 @@ import org.apache.spark.mllib.recommendation.MatrixFactorizationModel;
 import org.apache.spark.mllib.recommendation.Rating;
 import org.slf4j.Logger;
 
-import de.hpi.mmds.SparkUtil;
+import de.hpi.mmds.wiki.common.Recommendation;
+import de.hpi.mmds.wiki.common.Recommender;
+import de.hpi.mmds.wiki.common.SparkUtil;
 import scala.Tuple2;
 
 @SuppressWarnings("unused")
-public class SparkCollaborativeFiltering implements Serializable {
+public class SparkCollaborativeFiltering implements Serializable, Recommender {
 
 	private static final long serialVersionUID = 5290472017062948755L;
 	private static final int RANK = 35;
@@ -123,7 +125,7 @@ public class SparkCollaborativeFiltering implements Serializable {
 			while (!(s = br.readLine()).equals("\\q")) {
 				try {
 					int user = Integer.parseInt(s);
-					List<Integer> recommendations = cf.recommend(user, 10);
+					List<Recommendation> recommendations = cf.recommend(user, 10);
 					System.out.println(recommendations);
 				} catch (NumberFormatException e) {
 					System.err.println("Invalid Format!");
@@ -136,7 +138,7 @@ public class SparkCollaborativeFiltering implements Serializable {
 		}
 	}
 
-	private void evaluate(JavaSparkContext jsc, int num) {
+	public void evaluate(JavaSparkContext jsc, int num) {
 		JavaPairRDD<Integer, Iterable<Integer>> actual = getUserData(jsc, TEST_DATA);
 		JavaPairRDD<Integer, Iterable<Integer>> previous = getUserData(jsc, TRAINING_DATA);
 		List<Integer> uids = new ArrayList<>(previous.keys().intersection(actual.keys()).collect());
@@ -150,7 +152,7 @@ public class SparkCollaborativeFiltering implements Serializable {
 				if (i >= num) {
 					break;
 				}
-				List<Integer> recommendations = recommend(user, 100);
+				List<Integer> recommendations = recommend(user, 100).stream().map(Recommendation::getArticle).collect(Collectors.toList());
 				List<Iterable<Integer>> a = actual.lookup(user);
 				List<Iterable<Integer>> p = previous.lookup(user);
 				Set<Integer> gs = new HashSet<>();
@@ -197,16 +199,21 @@ public class SparkCollaborativeFiltering implements Serializable {
 			System.out.println("AVG Recall: " + totalRecall / i);
 		}
 	}
-
-	private List<Integer> recommend(int userId, int howMany) {
+	
+	public List<Recommendation> recommend(int userId, int howMany) {
 		try {
 			Rating[] recommendations = model.recommendProducts(userId, howMany);
-			return Arrays.stream(recommendations).filter(r -> r.rating() >= RECOMMEND_THRESHOLD).map(Rating::product)
+			return Arrays.stream(recommendations).filter(r -> r.rating() >= RECOMMEND_THRESHOLD).map(r -> new Recommendation(r.rating(), r.product()))
 					.collect(Collectors.toList());
 		} catch (NoSuchElementException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return Collections.emptyList();
+	}
+
+	@Override
+	public List<Recommendation> recommend(int userId, JavaRDD<Long> articles, int howMany) {
+		return recommend(userId, howMany);
 	}
 }

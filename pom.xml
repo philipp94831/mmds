@@ -63,5 +63,6 @@
     <module>core</module>
     <module>parsing</module>
     <module>categories</module>
+    <module>common</module>
   </modules>
 </project>
