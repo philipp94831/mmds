@@ -20,7 +20,6 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-
 import de.hpi.mmds.parsing.revision.Revision;
 import de.hpi.mmds.wiki.SparkUtil;
 import scala.Tuple2;
@@ -28,7 +27,6 @@ import scala.Tuple2;
 public class DataAggregator {
 
 	private static final String INPUT_DIR = "data/raw/";
-	private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
 	private final static String OUTPUT_DIR = "../cf/data/final/";
 
 	public static void main(String[] args) {
@@ -83,7 +81,7 @@ public class DataAggregator {
 						revision.setTextLength(split[2].equals("null") ? 1 : Integer.parseInt(split[2]));
 						revision.setMinor(Boolean.parseBoolean(split[3]));
 						revision.setTimestamp(split[4]);
-						return null;
+						return revision;
 					}
 				}).filter(new Function<Revision, Boolean>() {
 
@@ -97,6 +95,7 @@ public class DataAggregator {
 						return !(bots.contains(v1.getUserId()) || v1.isMinor());
 					}
 				});
+				revisions.cache();
 				JavaRDD<Revision> test = revisions.filter(new Function<Revision, Boolean>() {
 
 					/**
@@ -106,7 +105,7 @@ public class DataAggregator {
 
 					@Override
 					public Boolean call(Revision v1) throws Exception {
-						return DATE_FORMAT.parse(v1.getTimestamp()).compareTo(threshold) >= 0;
+						return v1.getTimestamp().compareTo(threshold) >= 0;
 					}
 				});
 				aggregate(OUTPUT_DIR + "test_" + file.getName(), test);
@@ -119,10 +118,11 @@ public class DataAggregator {
 
 					@Override
 					public Boolean call(Revision v1) throws Exception {
-						return DATE_FORMAT.parse(v1.getTimestamp()).compareTo(threshold) < 0;
+						return v1.getTimestamp().compareTo(threshold) < 0;
 					}
 				});
 				aggregate(OUTPUT_DIR +"training_" + file.getName(), training);
+				revisions.unpersist();
 			}
 		}
 	}
@@ -169,7 +169,10 @@ public class DataAggregator {
 		}).collect();
 		File outf = new File(fname);
 		try {
-			FileUtils.forceDelete(outf);
+			outf.getParentFile().mkdirs();
+			if(outf.exists()) {
+				FileUtils.forceDelete(outf);
+			}
 			try (FileWriter out = new FileWriter(outf)) {
 				for (String line : text) {
 					out.write(line + "\n");

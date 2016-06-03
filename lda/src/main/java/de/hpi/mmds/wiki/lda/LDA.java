@@ -10,7 +10,7 @@ import de.hpi.mmds.wiki.Recommender;
 public class LDA implements Recommender {
 
 	@Override
-	public List<Recommendation> recommend(int userId, JavaRDD<Long> articles, int howMany) {
+	public List<Recommendation> recommend(int userId, JavaRDD<Integer> articles, int howMany) {
 		// TODO Auto-generated method stub
 		return null;
 	}

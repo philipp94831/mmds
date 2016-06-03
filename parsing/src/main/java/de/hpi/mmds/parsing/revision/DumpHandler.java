@@ -1,6 +1,7 @@
 package de.hpi.mmds.parsing.revision;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Stack;
 
 import javax.xml.namespace.QName;
@@ -16,6 +17,7 @@ public class DumpHandler extends DefaultHandler {
 	private Revision currentRevision;
 	private final DumpWriter out;
 	private int currentNamespace;
+	private boolean err;
 
 	public DumpHandler(DumpWriter out) {
 		this.out = out;
@@ -45,10 +47,14 @@ public class DumpHandler extends DefaultHandler {
 			currentRevision.setUserId(Long.parseLong(buf.toString()));
 		}
 		if (isInTimestamp()) {
-			currentRevision.setTimestamp(buf.toString());
+			try {
+				currentRevision.setTimestamp(buf.toString());
+			} catch (ParseException e) {
+				err = true;
+			}
 		}
 		if (isInRevision()) {
-			if (currentRevision.getUserId() != 0 && currentNamespace == 0) {
+			if (!err && currentRevision.getUserId() != 0 && currentNamespace == 0) {
 				out.write(currentRevision);
 			}
 			currentRevision = null;
@@ -72,6 +78,7 @@ public class DumpHandler extends DefaultHandler {
 		}
 		if (isInRevision()) {
 			currentRevision = new Revision(currentArticle);
+			err = false;
 		}
 		if(isInMinor()) {
 			currentRevision.setMinor(true);
