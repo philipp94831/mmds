@@ -4,6 +4,7 @@ target/
 .settings/
 dumps/
 edits/
+data/
 log/
 .Rhistory
 filter/
