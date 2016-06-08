@@ -2,7 +2,7 @@ package de.hpi.mmds.wiki;
 
 import org.apache.spark.api.java.JavaSparkContext;
 
-import de.hpi.mmds.wiki.common.SparkUtil;
+import de.hpi.mmds.wiki.SparkUtil;
 
 public class App {
 

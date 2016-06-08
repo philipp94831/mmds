@@ -4,13 +4,13 @@ import java.util.List;
 
 import org.apache.spark.api.java.JavaRDD;
 
-import de.hpi.mmds.wiki.common.Recommendation;
-import de.hpi.mmds.wiki.common.Recommender;
+import de.hpi.mmds.wiki.Recommendation;
+import de.hpi.mmds.wiki.Recommender;
 
 public class CategoryAnalyzer implements Recommender {
 
 	@Override
-	public List<Recommendation> recommend(int userId, JavaRDD<Long> articles, int howMany) {
+	public List<Recommendation> recommend(int userId, JavaRDD<Integer> articles, int howMany) {
 		// TODO Auto-generated method stub
 		return null;
 	}
