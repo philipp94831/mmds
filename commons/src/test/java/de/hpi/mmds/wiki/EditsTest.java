@@ -1,17 +1,16 @@
 package de.hpi.mmds.wiki;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.List;
-import java.util.Map;
-
 import org.apache.spark.api.java.JavaSparkContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import scala.Tuple2;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class EditsTest {
 
@@ -21,7 +20,8 @@ public class EditsTest {
 	@BeforeClass
 	public static void setup() {
 		jsc = SparkUtil.getContext();
-		edits = new Edits(jsc, Thread.currentThread().getContextClassLoader().getResource("test_data.txt").getPath());
+		edits = new Edits(jsc,
+				Thread.currentThread().getContextClassLoader().getResource("training_data.txt").getPath());
 	}
 
 	@AfterClass

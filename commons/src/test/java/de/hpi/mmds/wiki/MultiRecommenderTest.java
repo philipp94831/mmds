@@ -5,11 +5,12 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 public class MultiRecommenderTest {
 
@@ -20,7 +21,8 @@ public class MultiRecommenderTest {
 	@BeforeClass
 	public static void setup() {
 		jsc = SparkUtil.getContext();
-		edits = new Edits(jsc, Thread.currentThread().getContextClassLoader().getResource("test_data.txt").getPath());
+		edits = new Edits(jsc,
+				Thread.currentThread().getContextClassLoader().getResource("training_data.txt").getPath());
 	}
 
 	@AfterClass

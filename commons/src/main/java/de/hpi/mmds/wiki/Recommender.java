@@ -1,8 +1,8 @@
 package de.hpi.mmds.wiki;
 
-import java.util.List;
-
 import org.apache.spark.api.java.JavaRDD;
+
+import java.util.List;
 
 public interface Recommender {
 

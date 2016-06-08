@@ -2,7 +2,6 @@ package de.hpi.mmds.wiki;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
-
 import scala.Tuple2;
 
 public class SparkUtil {
