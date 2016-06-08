@@ -1,6 +1,7 @@
 package de.hpi.mmds.wiki.spark;
 
 import org.apache.spark.api.java.function.Function;
+
 import scala.Tuple2;
 
 public final class KeyFilter<T> implements Function<Tuple2<T, T>, Boolean> {

@@ -1,10 +1,12 @@
 package de.hpi.mmds.wiki;
 
 import de.hpi.mmds.wiki.spark.KeyFilter;
+
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.PairFunction;
+
 import scala.Tuple2;
 
 import java.io.Serializable;
@@ -12,6 +14,12 @@ import java.io.Serializable;
 public class Edits implements Serializable {
 
 	private static final long serialVersionUID = 1668840974181477332L;
+	private final JavaPairRDD<Integer, Integer> edits;
+
+	public Edits(JavaSparkContext jsc, String dataDir) {
+		edits = parseEdits(jsc, dataDir);
+		edits.cache();
+	}
 
 	private static JavaPairRDD<Integer, Integer> parseEdits(JavaSparkContext jsc, String dataDir) {
 		JavaRDD<String> data = jsc.textFile(dataDir);
@@ -27,13 +35,6 @@ public class Edits implements Serializable {
 		});
 		jsc.sc().log().info("Edit data loaded");
 		return edits;
-	}
-
-	private final JavaPairRDD<Integer, Integer> edits;
-
-	public Edits(JavaSparkContext jsc, String dataDir) {
-		edits = parseEdits(jsc, dataDir);
-		edits.cache();
 	}
 
 	public JavaPairRDD<Integer, Iterable<Integer>> getAggregatedEdits() {

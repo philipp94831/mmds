@@ -1,8 +1,13 @@
 package de.hpi.mmds.wiki;
 
 import de.hpi.mmds.wiki.Evaluator.Result;
+
 import org.apache.spark.api.java.JavaSparkContext;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.Arrays;
@@ -13,10 +18,11 @@ import static org.junit.Assert.assertEquals;
 public class EvaluatorTest {
 
 	public static final double DOUBLE_TOLERANCE = 0.001;
+	private static final Recommender recommender = (userId, articles, howMany) -> Arrays
+			.asList(new Recommendation(1.0, 10), new Recommendation(1.0, 11));
 	private static Edits test;
 	private static Edits training;
 	private static JavaSparkContext jsc;
-	private static Recommender recommender;
 	private File out;
 
 	@BeforeClass
@@ -25,8 +31,6 @@ public class EvaluatorTest {
 		test = new Edits(jsc, Thread.currentThread().getContextClassLoader().getResource("test_data.txt").getPath());
 		training = new Edits(jsc,
 				Thread.currentThread().getContextClassLoader().getResource("training_data.txt").getPath());
-		recommender = (userId, articles, howMany) -> Arrays
-				.asList(new Recommendation(1.0, 10), new Recommendation(1.0, 11));
 	}
 
 	@AfterClass

@@ -1,5 +1,17 @@
 package de.hpi.mmds.parsing.revision;
 
+import de.hpi.mmds.wiki.SparkUtil;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.PairFunction;
+
+import scala.Tuple2;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -13,24 +25,28 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.api.java.function.PairFunction;
-
-import scala.Tuple2;
-import de.hpi.mmds.wiki.SparkUtil;
-
 public class DataAggregator {
 
 	private static final String INPUT_DIR = "data/raw/";
 	private final static String OUTPUT_DIR = "../cf/data/final/";
 
-	private static void aggregate(JavaSparkContext jsc, String dir) throws FileNotFoundException, IOException,
-			ParseException {
+	public static void main(String[] args) {
+		try (JavaSparkContext jsc = SparkUtil.getContext()) {
+			aggregate(jsc, INPUT_DIR);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private static void aggregate(JavaSparkContext jsc, String dir)
+			throws FileNotFoundException, IOException, ParseException {
 		File d = new File(dir);
 		Date threshold = new SimpleDateFormat("dd.MM.yyyy").parse("01.01.2012");
 		if (!d.isDirectory()) {
@@ -51,9 +67,6 @@ public class DataAggregator {
 			if (file.isFile()) {
 				JavaRDD<Revision> revisions = jsc.textFile(file.getPath()).map(new Function<String, Revision>() {
 
-					/**
-					 *
-					 */
 					private static final long serialVersionUID = 856475920466882421L;
 
 					@Override
@@ -71,9 +84,6 @@ public class DataAggregator {
 					}
 				}).filter(new Function<Revision, Boolean>() {
 
-					/**
-					 *
-					 */
 					private static final long serialVersionUID = 260940817334437364L;
 
 					@Override
@@ -84,9 +94,6 @@ public class DataAggregator {
 				revisions.cache();
 				JavaRDD<Revision> test = revisions.filter(new Function<Revision, Boolean>() {
 
-					/**
-					 *
-					 */
 					private static final long serialVersionUID = 4216755090418786585L;
 
 					@Override
@@ -97,9 +104,6 @@ public class DataAggregator {
 				aggregate(OUTPUT_DIR + "test_" + file.getName(), test);
 				JavaRDD<Revision> training = revisions.filter(new Function<Revision, Boolean>() {
 
-					/**
-					 *
-					 */
 					private static final long serialVersionUID = 4216755090418786585L;
 
 					@Override
@@ -117,9 +121,6 @@ public class DataAggregator {
 		JavaPairRDD<Tuple2<Long, Long>, Integer> parsed = revisions
 				.mapToPair(new PairFunction<Revision, Tuple2<Long, Long>, Integer>() {
 
-					/**
-					 *
-					 */
 					private static final long serialVersionUID = 2015595100212783648L;
 
 					@Override
@@ -131,9 +132,6 @@ public class DataAggregator {
 		JavaPairRDD<Tuple2<Long, Long>, Integer> reduced = parsed
 				.reduceByKey(new Function2<Integer, Integer, Integer>() {
 
-					/**
-					 *
-					 */
 					private static final long serialVersionUID = 7936093501541164863L;
 
 					@Override
@@ -143,9 +141,6 @@ public class DataAggregator {
 				});
 		List<String> text = reduced.map(new Function<Tuple2<Tuple2<Long, Long>, Integer>, String>() {
 
-			/**
-			 *
-			 */
 			private static final long serialVersionUID = -6264002531208218613L;
 
 			@Override
@@ -167,21 +162,6 @@ public class DataAggregator {
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
-		}
-	}
-
-	public static void main(String[] args) {
-		try (JavaSparkContext jsc = SparkUtil.getContext()) {
-			aggregate(jsc, INPUT_DIR);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}
 }

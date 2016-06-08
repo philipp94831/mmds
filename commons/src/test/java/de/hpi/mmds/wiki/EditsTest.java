@@ -4,6 +4,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import scala.Tuple2;
 
 import java.util.List;

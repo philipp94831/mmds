@@ -2,17 +2,18 @@ package de.hpi.mmds.wiki;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
+
 import scala.Tuple2;
 
 public class SparkUtil {
 
-	private static SparkConf defaultConf() {
-		return new SparkConf().setAppName("MMDS Wiki").setMaster("local");
-	}
-
 	public static JavaSparkContext getContext() {
 		SparkConf conf = defaultConf();
 		return new JavaSparkContext(conf);
+	}
+
+	private static SparkConf defaultConf() {
+		return new SparkConf().setAppName("MMDS Wiki").setMaster("local");
 	}
 
 	public static JavaSparkContext getContext(SparkConf newConf) {

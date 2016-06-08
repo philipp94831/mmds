@@ -1,11 +1,11 @@
 package de.hpi.mmds.wiki.categories;
 
-import java.util.List;
+import de.hpi.mmds.wiki.Recommendation;
+import de.hpi.mmds.wiki.Recommender;
 
 import org.apache.spark.api.java.JavaRDD;
 
-import de.hpi.mmds.wiki.Recommendation;
-import de.hpi.mmds.wiki.Recommender;
+import java.util.List;
 
 public class CategoryAnalyzer implements Recommender {
 

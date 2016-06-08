@@ -1,12 +1,12 @@
 package de.hpi.mmds.parsing.revision;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-
-import org.apache.commons.io.FileUtils;
 
 public class DumpWriter {
 
@@ -28,9 +28,8 @@ public class DumpWriter {
 
 	public void write(Revision revision) {
 		try {
-			outs.floorEntry(revision.getArticleId())
-					.getValue()
-			.write(revision.getArticleId() + "," + revision.getUserId() + "," + revision.getTextLength() + ","
+			outs.floorEntry(revision.getArticleId()).getValue()
+					.write(revision.getArticleId() + "," + revision.getUserId() + "," + revision.getTextLength() + ","
 							+ revision.isMinor() + "," + revision.getTimestampAsString() + "\n");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

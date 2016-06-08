@@ -7,54 +7,33 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Evaluator {
 
-	public static final int NUM_RECOMMENDATIONS = 100;
+	private static final int NUM_RECOMMENDATIONS = 100;
 	private final Edits test;
 	private final Edits training;
 	private final File out;
 	private final Recommender recommender;
-
-	public static class Result<T> {
-
-		private final Set<T> recommendations;
-		private final Set<T> groundTruth;
-		private final Set<T> intersect;
-
-		public Result(Set<T> recommendations, Set<T> groundTruth) {
-			this.recommendations = recommendations;
-			this.groundTruth = groundTruth;
-			this.intersect = new HashSet<>(groundTruth);
-			this.intersect.retainAll(recommendations);
-		}
-
-		public double precision() {
-			return recommendations.isEmpty() ? 0 : (double) intersect.size() / recommendations.size();
-		}
-
-		public double recall() {
-			return (double) intersect.size() / groundTruth.size();
-		}
-
-		public String printResult() {
-			StringBuilder sb = new StringBuilder();
-			sb.append("Recommendations: " + recommendations + "\n");
-			sb.append("Gold standard: " + groundTruth + "\n");
-			sb.append("Matches: " + intersect + "\n");
-			sb.append("Precision: " + precision() + "\n");
-			sb.append("Recall: " + recall());
-			return sb.toString();
-		}
-	}
 
 	public Evaluator(Recommender recommender, Edits test, Edits training, File out) {
 		this.recommender = recommender;
 		this.training = training;
 		this.test = test;
 		this.out = out;
+	}
+
+	public Map<Integer, Result> evaluate(int num) {
+		return evaluate(num, 1L);
 	}
 
 	public Map<Integer, Result> evaluate(int num, long seed) {
@@ -110,7 +89,33 @@ public class Evaluator {
 		return results;
 	}
 
-	public Map<Integer, Result> evaluate(int num) {
-		return evaluate(num, 1L);
+	public static class Result<T> {
+
+		private final Set<T> recommendations;
+		private final Set<T> groundTruth;
+		private final Set<T> intersect;
+
+		public Result(Set<T> recommendations, Set<T> groundTruth) {
+			this.recommendations = recommendations;
+			this.groundTruth = groundTruth;
+			this.intersect = new HashSet<>(groundTruth);
+			this.intersect.retainAll(recommendations);
+		}
+
+		public String printResult() {
+			return "Recommendations: " + recommendations + "\n" +
+					"Gold standard: " + groundTruth + "\n" +
+					"Matches: " + intersect + "\n" +
+					"Precision: " + precision() + "\n" +
+					"Recall: " + recall();
+		}
+
+		public double precision() {
+			return recommendations.isEmpty() ? 0 : (double) intersect.size() / recommendations.size();
+		}
+
+		public double recall() {
+			return (double) intersect.size() / groundTruth.size();
+		}
 	}
 }
