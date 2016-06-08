@@ -86,7 +86,7 @@ def categories_sql2csv(allCateogriesFileName, byLineFileName):
 def main():
 	categories_sql2csv(
 		# input 
-		'data/enwiki-20160407-category.sql',
+		'edits/enwiki-20160407-category.sql',
 
 		# output
 		'results/categories_by_line.csv'

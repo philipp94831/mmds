@@ -24,8 +24,8 @@ import com.github.philipp94831.stax2parser.Stax2Parser;
 public class DumpParser {
 
 	private static final String INPUT_DIR = "dumps/";
-	private static final String OUTPUT_DIR = "data/raw/";
 	private static final Logger LOGGER = Logger.getLogger(DumpParser.class.getName());
+	private static final String OUTPUT_DIR = "data/raw/";
 
 	public static void main(String[] args) {
 		long start = System.nanoTime();

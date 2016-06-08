@@ -8,16 +8,16 @@ import java.util.Date;
 public class Revision implements Serializable {
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 8344153876742311682L;
-	private final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
 	private final long articleId;
-	private long userId;
-	private Date timestamp;
-	private String username;
-	private Integer textLength = 1;
+	private final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
 	private boolean minor = false;
+	private Integer textLength = 1;
+	private Date timestamp;
+	private long userId;
+	private String username;
 
 	public Revision(long articleId) {
 		this.articleId = articleId;
@@ -27,12 +27,8 @@ public class Revision implements Serializable {
 		return articleId;
 	}
 
-	public long getUserId() {
-		return userId;
-	}
-
-	public void setUserId(long userId) {
-		this.userId = userId;
+	public Integer getTextLength() {
+		return textLength;
 	}
 
 	public Date getTimestamp() {
@@ -43,24 +39,12 @@ public class Revision implements Serializable {
 		return DATE_FORMAT.format(timestamp);
 	}
 
-	public void setTimestamp(String timestamp) throws ParseException {
-		this.timestamp = DATE_FORMAT.parse(timestamp);
+	public long getUserId() {
+		return userId;
 	}
 
 	public String getUsername() {
 		return username;
-	}
-
-	public void setUsername(String username) {
-		this.username = username;
-	}
-
-	public Integer getTextLength() {
-		return textLength;
-	}
-
-	public void setTextLength(Integer textLength) {
-		this.textLength = textLength;
 	}
 
 	public boolean isMinor() {
@@ -69,6 +53,22 @@ public class Revision implements Serializable {
 
 	public void setMinor(boolean minor) {
 		this.minor = minor;
+	}
+
+	public void setTextLength(Integer textLength) {
+		this.textLength = textLength;
+	}
+
+	public void setTimestamp(String timestamp) throws ParseException {
+		this.timestamp = DATE_FORMAT.parse(timestamp);
+	}
+
+	public void setUserId(long userId) {
+		this.userId = userId;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
 	}
 
 }

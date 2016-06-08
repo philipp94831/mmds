@@ -78,7 +78,7 @@ def categorylinks_sql2csv(inputFileName, pagesFileName, subcatsFileName):
 def main():
 	categorylinks_sql2csv(
 		# input
-		'data/enwiki-20160407-categorylinks.sql',
+		'edits/enwiki-20160407-categorylinks.sql',
 		
 		# output
 		'results/2_categorylinks_by_line.csv',

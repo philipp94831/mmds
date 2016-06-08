@@ -20,31 +20,17 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-import de.hpi.mmds.parsing.revision.Revision;
-import de.hpi.mmds.wiki.SparkUtil;
+
 import scala.Tuple2;
+import de.hpi.mmds.wiki.SparkUtil;
 
 public class DataAggregator {
 
 	private static final String INPUT_DIR = "data/raw/";
 	private final static String OUTPUT_DIR = "../cf/data/final/";
 
-	public static void main(String[] args) {
-		try (JavaSparkContext jsc = SparkUtil.getContext()) {
-			aggregate(jsc, INPUT_DIR);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-	private static void aggregate(JavaSparkContext jsc, String dir) throws FileNotFoundException, IOException, ParseException {
+	private static void aggregate(JavaSparkContext jsc, String dir) throws FileNotFoundException, IOException,
+	ParseException {
 		File d = new File(dir);
 		Date threshold = new SimpleDateFormat("dd.MM.yyyy").parse("01.01.2012");
 		if (!d.isDirectory()) {
@@ -66,7 +52,7 @@ public class DataAggregator {
 				JavaRDD<Revision> revisions = jsc.textFile(file.getPath()).map(new Function<String, Revision>() {
 
 					/**
-					 * 
+					 *
 					 */
 					private static final long serialVersionUID = 856475920466882421L;
 
@@ -74,7 +60,7 @@ public class DataAggregator {
 					public Revision call(String v1) throws Exception {
 						String[] split = v1.split(",");
 						if (split.length != 5) {
-							throw new IllegalStateException("Data malformed");
+							throw new IllegalStateException("Edits malformed");
 						}
 						Revision revision = new Revision(Long.parseLong(split[0]));
 						revision.setUserId(Long.parseLong(split[1]));
@@ -86,7 +72,7 @@ public class DataAggregator {
 				}).filter(new Function<Revision, Boolean>() {
 
 					/**
-					 * 
+					 *
 					 */
 					private static final long serialVersionUID = 260940817334437364L;
 
@@ -99,7 +85,7 @@ public class DataAggregator {
 				JavaRDD<Revision> test = revisions.filter(new Function<Revision, Boolean>() {
 
 					/**
-					 * 
+					 *
 					 */
 					private static final long serialVersionUID = 4216755090418786585L;
 
@@ -112,7 +98,7 @@ public class DataAggregator {
 				JavaRDD<Revision> training = revisions.filter(new Function<Revision, Boolean>() {
 
 					/**
-					 * 
+					 *
 					 */
 					private static final long serialVersionUID = 4216755090418786585L;
 
@@ -121,7 +107,7 @@ public class DataAggregator {
 						return v1.getTimestamp().compareTo(threshold) < 0;
 					}
 				});
-				aggregate(OUTPUT_DIR +"training_" + file.getName(), training);
+				aggregate(OUTPUT_DIR + "training_" + file.getName(), training);
 				revisions.unpersist();
 			}
 		}
@@ -132,7 +118,7 @@ public class DataAggregator {
 				.mapToPair(new PairFunction<Revision, Tuple2<Long, Long>, Integer>() {
 
 					/**
-					 * 
+					 *
 					 */
 					private static final long serialVersionUID = 2015595100212783648L;
 
@@ -146,7 +132,7 @@ public class DataAggregator {
 				.reduceByKey(new Function2<Integer, Integer, Integer>() {
 
 					/**
-					 * 
+					 *
 					 */
 					private static final long serialVersionUID = 7936093501541164863L;
 
@@ -158,7 +144,7 @@ public class DataAggregator {
 		List<String> text = reduced.map(new Function<Tuple2<Tuple2<Long, Long>, Integer>, String>() {
 
 			/**
-			 * 
+			 *
 			 */
 			private static final long serialVersionUID = -6264002531208218613L;
 
@@ -170,7 +156,7 @@ public class DataAggregator {
 		File outf = new File(fname);
 		try {
 			outf.getParentFile().mkdirs();
-			if(outf.exists()) {
+			if (outf.exists()) {
 				FileUtils.forceDelete(outf);
 			}
 			try (FileWriter out = new FileWriter(outf)) {
@@ -181,6 +167,21 @@ public class DataAggregator {
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
+		}
+	}
+
+	public static void main(String[] args) {
+		try (JavaSparkContext jsc = SparkUtil.getContext()) {
+			aggregate(jsc, INPUT_DIR);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 }
