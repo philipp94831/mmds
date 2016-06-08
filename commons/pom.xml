@@ -3,17 +3,13 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>de.hpi.mmds</groupId>
+    <groupId>de.hpi.mmds.wiki</groupId>
     <artifactId>wiki</artifactId>
-    <version>${project.version}</version>
+    <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <groupId>${parent.groupId}.wiki</groupId>
-  <artifactId>common</artifactId>
-  <name>common</name>
+  <artifactId>commons</artifactId>
+  <name>mmds-wiki-commons</name>
   <url>http://maven.apache.org</url>
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
   <dependencies>
   </dependencies>
 </project>

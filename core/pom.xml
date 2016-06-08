@@ -3,17 +3,13 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>de.hpi.mmds</groupId>
+    <groupId>de.hpi.mmds.wiki</groupId>
     <artifactId>wiki</artifactId>
-    <version>${project.version}</version>
+    <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <groupId>${parent.groupId}.wiki</groupId>
   <artifactId>core</artifactId>
-  <name>core</name>
+  <name>mmds-wiki-core</name>
   <url>http://maven.apache.org</url>
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
   <dependencies>
     <dependency>
       <artifactId>cf</artifactId>
@@ -21,7 +17,7 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <artifactId>common</artifactId>
+      <artifactId>commons</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>

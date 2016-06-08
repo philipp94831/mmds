@@ -8,3 +8,5 @@ log/
 .Rhistory
 filter/
 *.pem
+*.iml
+.idea/
