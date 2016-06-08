@@ -10,3 +10,5 @@ filter/
 *.pem
 *.iml
 .idea/
+.cache-main
+.cache-tests
