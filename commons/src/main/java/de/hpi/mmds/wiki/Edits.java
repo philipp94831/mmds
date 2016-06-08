@@ -16,7 +16,7 @@ public class Edits implements Serializable {
 
 	private static JavaPairRDD<Integer, Integer> parseEdits(JavaSparkContext jsc, String dataDir) {
 		JavaRDD<String> data = jsc.textFile(dataDir);
-		JavaPairRDD<Integer, Integer> res = data.mapToPair(new PairFunction<String, Integer, Integer>() {
+		JavaPairRDD<Integer, Integer> edits = data.mapToPair(new PairFunction<String, Integer, Integer>() {
 
 			private static final long serialVersionUID = -4781040078296911266L;
 
@@ -27,13 +27,14 @@ public class Edits implements Serializable {
 			}
 		});
 		jsc.sc().log().info("Edit data loaded");
-		return res;
+		return edits;
 	}
 
 	private final JavaPairRDD<Integer, Integer> edits;
 
 	public Edits(JavaSparkContext jsc, String dataDir) {
 		edits = parseEdits(jsc, dataDir);
+		edits.cache();
 	}
 
 	public JavaPairRDD<Integer, Iterable<Integer>> getAggregatedEdits() {

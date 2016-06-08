@@ -30,7 +30,7 @@ public class DataAggregator {
 	private final static String OUTPUT_DIR = "../cf/data/final/";
 
 	private static void aggregate(JavaSparkContext jsc, String dir) throws FileNotFoundException, IOException,
-	ParseException {
+			ParseException {
 		File d = new File(dir);
 		Date threshold = new SimpleDateFormat("dd.MM.yyyy").parse("01.01.2012");
 		if (!d.isDirectory()) {

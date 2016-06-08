@@ -29,9 +29,9 @@ public class DumpWriter {
 	public void write(Revision revision) {
 		try {
 			outs.floorEntry(revision.getArticleId())
-			.getValue()
-					.write(revision.getArticleId() + "," + revision.getUserId() + "," + revision.getTextLength() + ","
-					+ revision.isMinor() + "," + revision.getTimestampAsString() + "\n");
+					.getValue()
+			.write(revision.getArticleId() + "," + revision.getUserId() + "," + revision.getTextLength() + ","
+							+ revision.isMinor() + "," + revision.getTimestampAsString() + "\n");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

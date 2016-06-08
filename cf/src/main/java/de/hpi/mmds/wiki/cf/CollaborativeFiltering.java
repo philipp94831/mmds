@@ -18,7 +18,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import de.hpi.mmds.wiki.Edits;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -29,6 +28,7 @@ import org.apache.spark.mllib.recommendation.Rating;
 import org.slf4j.Logger;
 
 import scala.Tuple2;
+import de.hpi.mmds.wiki.Edits;
 import de.hpi.mmds.wiki.Recommendation;
 import de.hpi.mmds.wiki.Recommender;
 import de.hpi.mmds.wiki.SparkUtil;
