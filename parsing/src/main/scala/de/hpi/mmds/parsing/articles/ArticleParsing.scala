@@ -1,11 +1,8 @@
 package de.hpi.mmds.sparking.articles
 
-import org.apache.hadoop.streaming.StreamXmlRecordReader
-import org.apache.hadoop.streaming.StreamInputFormat
-import org.apache.hadoop.mapred.JobConf
-import org.apache.hadoop.mapred.FileInputFormat
+import com.databricks.spark.xml.XmlInputFormat
 import org.apache.spark.{SparkConf, SparkContext}
-import scala.xml.XML
+import org.apache.hadoop.io.{LongWritable, Text}
 
 class ArticleParser(input: String) {
   val sc = {
@@ -17,28 +14,44 @@ class ArticleParser(input: String) {
   }
   
   def run() = {
-    // configure reading
-    val jobConf = new JobConf()
-    jobConf.set("stream.recordreader.class",
-                "org.apache.hadoop.streaming.StreamXmlRecordReader")
-    jobConf.set("stream.recordreader.begin", "<page")
-    jobConf.set("stream.recordreader.end", "</page>")
-    FileInputFormat.addInputPaths(jobConf,
-                                  s"C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/enwiki-20160501-pages-articles1-20articles.xml-p000000010p000030302")
+    // configure hadoop
+    sc.hadoopConfiguration.set(XmlInputFormat.START_TAG_KEY, "<page>")
+    sc.hadoopConfiguration.set(XmlInputFormat.END_TAG_KEY, "</page>")
+    sc.hadoopConfiguration.set(XmlInputFormat.ENCODING_KEY, "utf-8")
     
-    val documents = sc.hadoopRDD(jobConf,	classOf[org.apache.hadoop.streaming.StreamInputFormat],
-                                          classOf[org.apache.hadoop.io.Text],
-                                          classOf[org.apache.hadoop.io.Text])
-    val texts = documents.map(_._1.toString)
-                          .map{ s => 
-                            val xml = XML.loadString(s)
-                            val id = (xml \ "id").text.toDouble
-                            val title = (xml \ "title").text
-                            val text = (xml \ "revision" \ "text").text.replaceAll("\\W", " ")
-                            val tknzed = text.split("\\W").filter(_.size > 3).toList
-                            (id, title, tknzed )
-                          }
-    texts.saveAsTextFile(s"C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/enwiki-20160501-pages-articles1-20articles.txt")
+    val path = "C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/enwiki-20160501-pages-articles1-20articles.xml-p000000010p000030302"
+    
+    // read file
+    val records = sc.newAPIHadoopFile(path, classOf[XmlInputFormat], classOf[LongWritable], classOf[Text])
+
+    
+    
+    
+    
+    
+    
+    
+    // DEBUG
+    sc.setLogLevel("ERROR")
+    records.foreach(println)
+    
+    println("\n")
+    println("\n")
+    println("\n")
+    println("\n")
+    println("\n")
+    println("\n")
+    println("\n")
+    println("\n")
+    println("\n")
+    println("\n")
+    println("\n")
+    println("\n")
+    println("\n")
+    println("\n")
+    println("Number of records: ")
+    println(records.count())
+    println("\n")
   }
 }
 
