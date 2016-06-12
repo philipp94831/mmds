@@ -1,17 +1,19 @@
 package de.hpi.mmds.wiki;
 
+import com.google.common.collect.Sets;
+
 import org.apache.commons.io.FileUtils;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+
+import scala.Tuple2;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -33,13 +35,18 @@ public class Evaluator {
 	}
 
 	public Map<Integer, Result> evaluate(int num) {
-		return evaluate(num, 1L);
+		return evaluate(num, new Random().nextLong());
 	}
 
 	public Map<Integer, Result> evaluate(int num, long seed) {
 		Map<Integer, Result> results = new HashMap<>();
-		List<Integer> uids = new ArrayList<>(test.getUsers().intersection(training.getUsers()).collect());
 		int i = 0;
+		JavaPairRDD<Integer, Set<Integer>> groundTruths = test.getAggregatedEdits().join(training.getAggregatedEdits())
+				.mapValues(t -> {
+					Set<Integer> gt = Sets.newHashSet(t._1);
+					gt.removeAll(Sets.newHashSet(t._2));
+					return gt;
+				}).filter(t -> !t._2.isEmpty());
 		double totalPrecision = 0.0;
 		double totalRecall = 0.0;
 		if (out.exists()) {
@@ -49,35 +56,27 @@ public class Evaluator {
 				throw new RuntimeException("Could not delete output file " + out.getPath(), e);
 			}
 		}
-		Collections.shuffle(uids, new Random(seed));
 		try (BufferedWriter writer = new BufferedWriter(new FileWriter(out))) {
-			for (int user : uids) {
-				if (i >= num) {
-					break;
-				}
+			for (Tuple2<Integer, Set<Integer>> t : groundTruths.takeSample(false, num, seed)) {
+				int user = t._1;
 				JavaRDD<Integer> articles = training.getEdits(user);
-				List<Integer> a = test.getEdits(user).collect();
-				List<Integer> p = articles.collect();
-				Set<Integer> groundTruth = new HashSet<>(a);
-				groundTruth.removeAll(p);
-				if (!groundTruth.isEmpty()) {
-					Set<Integer> recommendations = recommender.recommend(user, articles, NUM_RECOMMENDATIONS).stream()
-							.map(Recommendation::getArticle).collect(Collectors.toSet());
-					Result<Integer> result = new Result<>(recommendations, groundTruth);
-					results.put(user, result);
-					totalPrecision += result.precision();
-					totalRecall += result.recall();
-					i++;
-					writer.write("User: " + user + "\n");
-					writer.write(result.printResult());
-					writer.newLine();
-					writer.write("AVG Precision: " + totalPrecision / i + "\n");
-					writer.write("AVG Recall: " + totalRecall / i + "\n");
-					writer.write("Processed: " + i + "\n");
-					writer.write("---");
-					writer.newLine();
-					writer.flush();
-				}
+				Set<Integer> groundTruth = t._2;
+				Set<Integer> recommendations = recommender.recommend(user, articles, NUM_RECOMMENDATIONS).stream()
+						.map(Recommendation::getArticle).collect(Collectors.toSet());
+				Result<Integer> result = new Result<>(recommendations, groundTruth);
+				results.put(user, result);
+				totalPrecision += result.precision();
+				totalRecall += result.recall();
+				i++;
+				writer.write("User: " + user + "\n");
+				writer.write(result.printResult());
+				writer.newLine();
+				writer.write("AVG Precision: " + totalPrecision / i + "\n");
+				writer.write("AVG Recall: " + totalRecall / i + "\n");
+				writer.write("Processed: " + i + "\n");
+				writer.write("---");
+				writer.newLine();
+				writer.flush();
 			}
 		} catch (IOException e) {
 			throw new RuntimeException("Error writing to output file " + out.getPath(), e);
