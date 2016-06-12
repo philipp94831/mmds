@@ -49,4 +49,13 @@ public class EditsTest {
 		assertTrue(u1.contains(1));
 		assertTrue(u1.contains(2));
 	}
+
+	@Test
+	public void testUsers() {
+		List<Integer> users = edits.getUsers().collect();
+		assertEquals(3, users.size());
+		assertTrue(users.contains(1));
+		assertTrue(users.contains(2));
+		assertTrue(users.contains(3));
+	}
 }

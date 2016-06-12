@@ -51,7 +51,7 @@ public class Edits implements Serializable {
 	}
 
 	public JavaRDD<Integer> getUsers() {
-		return edits.keys();
+		return edits.keys().distinct();
 	}
 
 	public Edits cache() {
