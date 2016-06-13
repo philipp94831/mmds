@@ -65,7 +65,8 @@ public class CollaborativeFiltering implements Serializable, Recommender {
 		return model;
 	}
 
-	public CollaborativeFiltering(JavaSparkContext jsc, String filterDir, String path, int rank, double lambda, double alpha) {
+	public CollaborativeFiltering(JavaSparkContext jsc, String filterDir, String path, int rank, double lambda,
+			double alpha) {
 		logger = jsc.sc().log();
 		JavaRDD<String> data = jsc.textFile(path);
 		JavaRDD<Rating> ratings = data.map(new Function<String, Rating>() {
@@ -76,7 +77,7 @@ public class CollaborativeFiltering implements Serializable, Recommender {
 			public Rating call(String s) {
 				String[] sarray = s.split(",");
 				return new Rating(Integer.parseInt(sarray[0]), Integer.parseInt(sarray[1]),
-						Double.parseDouble(sarray[2]));
+						Math.log(Double.parseDouble(sarray[2])) / LOG2 + 1);
 			}
 		}).cache();
 		logger.info("Ratings imported");
