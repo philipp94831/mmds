@@ -27,7 +27,7 @@ public class EvaluatorTest {
 
 	@BeforeClass
 	public static void setupClass() {
-		jsc = SparkUtil.getContext();
+		jsc = SparkUtil.getContext(EvaluatorTest.class.getName());
 		test = new Edits(jsc, Thread.currentThread().getContextClassLoader().getResource("test_data.txt").getPath());
 		training = new Edits(jsc,
 				Thread.currentThread().getContextClassLoader().getResource("training_data.txt").getPath());

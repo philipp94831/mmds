@@ -11,7 +11,7 @@ public class SparkFunctions {
 	}
 
 	public static <T> Function<T, T> identity() {
-		return (v) -> v;
+		return v -> v;
 	}
 
 }

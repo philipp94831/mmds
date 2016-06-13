@@ -16,13 +16,11 @@ public class App {
 	private static final String OUT_FILE = null;
 
 	public static void main(String[] args) {
-		try (JavaSparkContext jsc = SparkUtil.getContext()) {
+		try (JavaSparkContext jsc = SparkUtil.getContext("MMDS Wiki")) {
 			Edits test = new Edits(jsc, TEST_DIR);
 			Edits training = new Edits(jsc, TRAINING_DIR);
 			MultiRecommender recommender = new MultiRecommender();
-			recommender.add(1, new CollaborativeFiltering(jsc, CF_FILTER_DIR));
-			recommender.add(1, new CategoryAnalyzer());
-			recommender.add(1, new LDA());
+			recommender.add(new CollaborativeFiltering(jsc, CF_FILTER_DIR)).add(new CategoryAnalyzer()).add(new LDA());
 			Evaluator eval = new Evaluator(recommender, test, training, new File(OUT_FILE));
 			eval.evaluate(200);
 		}

@@ -7,17 +7,17 @@ import scala.Tuple2;
 
 public class SparkUtil {
 
-	public static JavaSparkContext getContext() {
-		SparkConf conf = defaultConf();
+	public static JavaSparkContext getContext(String name) {
+		SparkConf conf = defaultConf(name);
 		return new JavaSparkContext(conf);
 	}
 
-	private static SparkConf defaultConf() {
-		return new SparkConf().setAppName("MMDS Wiki").setMaster("local");
+	private static SparkConf defaultConf(String name) {
+		return new SparkConf().setAppName(name).setMaster("local");
 	}
 
-	public static JavaSparkContext getContext(SparkConf newConf) {
-		SparkConf conf = defaultConf();
+	public static JavaSparkContext getContext(String name, SparkConf newConf) {
+		SparkConf conf = defaultConf(name);
 		for (Tuple2<String, String> t : newConf.getAll()) {
 			conf.set(t._1, t._2);
 		}
