@@ -14,6 +14,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -48,6 +49,7 @@ public class Evaluator {
 					return gt;
 				}).filter(t -> !t._2.isEmpty());
 		double totalPrecision = 0.0;
+		double totalMAP = 0.0;
 		double totalRecall = 0.0;
 		if (out.exists()) {
 			try {
@@ -61,17 +63,19 @@ public class Evaluator {
 				int user = t._1;
 				JavaRDD<Integer> articles = training.getEdits(user);
 				Set<Integer> groundTruth = t._2;
-				Set<Integer> recommendations = recommender.recommend(user, articles, NUM_RECOMMENDATIONS).stream()
-						.map(Recommendation::getArticle).collect(Collectors.toSet());
+				List<Integer> recommendations = recommender.recommend(user, articles, NUM_RECOMMENDATIONS).stream()
+						.map(Recommendation::getArticle).collect(Collectors.toList());
 				Result<Integer> result = new Result<>(recommendations, groundTruth);
 				results.put(user, result);
 				totalPrecision += result.precision();
+				totalMAP += result.meanAveragePrecision();
 				totalRecall += result.recall();
 				i++;
 				writer.write("User: " + user + "\n");
 				writer.write(result.printResult());
 				writer.newLine();
 				writer.write("AVG Precision: " + totalPrecision / i + "\n");
+				writer.write("AVG MAP: " + totalMAP / i + "\n");
 				writer.write("AVG Recall: " + totalRecall / i + "\n");
 				writer.write("Processed: " + i + "\n");
 				writer.write("---");
@@ -83,6 +87,7 @@ public class Evaluator {
 		}
 		if (i > 0) {
 			System.out.println("AVG Precision: " + totalPrecision / i);
+			System.out.println("AVG MAP: " + totalMAP / i);
 			System.out.println("AVG Recall: " + totalRecall / i);
 		}
 		return results;
@@ -90,11 +95,11 @@ public class Evaluator {
 
 	public static class Result<T> {
 
-		private final Set<T> recommendations;
+		private final List<T> recommendations;
 		private final Set<T> groundTruth;
 		private final Set<T> intersect;
 
-		public Result(Set<T> recommendations, Set<T> groundTruth) {
+		public Result(List<T> recommendations, Set<T> groundTruth) {
 			this.recommendations = recommendations;
 			this.groundTruth = groundTruth;
 			this.intersect = new HashSet<>(groundTruth);
@@ -106,11 +111,26 @@ public class Evaluator {
 					"Gold standard: " + groundTruth + "\n" +
 					"Matches: " + intersect + "\n" +
 					"Precision: " + precision() + "\n" +
+					"Mean Average Precision: " + meanAveragePrecision() + "\n" +
 					"Recall: " + recall();
 		}
 
 		public double precision() {
 			return recommendations.isEmpty() ? 0 : (double) intersect.size() / recommendations.size();
+		}
+
+		public double meanAveragePrecision() {
+			double map = 0.0;
+			int tp = 0;
+			int i = 0;
+			for(T recommendation : recommendations) {
+				i++;
+				if(groundTruth.contains(recommendation)) {
+					tp++;
+					map += (double) tp / i;
+				}
+			}
+			return tp == 0? 0.0 : map / tp;
 		}
 
 		public double recall() {
