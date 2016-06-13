@@ -51,7 +51,7 @@ class ArticleParser(input: String, output: String) {
 object ArticleParser {
   def main(args: Array[String]): Unit = {
     if (args.isEmpty) {
-      println("Usage: scala <main class> <input file location> <output file location>")
+      println("Usage: scala <main class> <input file location> <output file directory, nonexistent>")
       sys.exit(1)
     }
     new ArticleParser(args(0), args(1)).run()
