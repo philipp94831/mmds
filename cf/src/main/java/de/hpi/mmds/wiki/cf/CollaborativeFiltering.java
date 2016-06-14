@@ -6,11 +6,9 @@ import de.hpi.mmds.wiki.Recommender;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.recommendation.ALS;
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel;
 import org.apache.spark.mllib.recommendation.Rating;
-import org.slf4j.Logger;
 
 import scala.Tuple2;
 
@@ -29,28 +27,25 @@ import java.util.stream.Collectors;
 
 public class CollaborativeFiltering implements Serializable, Recommender {
 
-	public static final String PRODUCT_PATH = "/product";
-	public static final String USER_PATH = "/user";
+	private static final String PRODUCT_PATH = "/product";
+	private static final String USER_PATH = "/user";
 	private static final double LOG2 = Math.log(2);
 	private static final boolean MANUAL_SAVE_LOAD = true;
-	private static final int NUM_ITERATIONS = 10;
 	private static final double RECOMMEND_THRESHOLD = 0.0;
 	private static final long serialVersionUID = 5290472017062948755L;
-	private final Logger logger;
 	private final MatrixFactorizationModel model;
 
-	public CollaborativeFiltering(JavaSparkContext jsc, String filterDir) {
-		logger = jsc.sc().log();
-		model = loadModel(jsc, filterDir);
+	public CollaborativeFiltering(MatrixFactorizationModel model) {
+		this.model = model;
 	}
 
-	private static MatrixFactorizationModel loadModel(JavaSparkContext jsc, String filterDir) {
+	public static CollaborativeFiltering load(JavaSparkContext jsc, String filterDir) {
 		final MatrixFactorizationModel model;
 		if (!MANUAL_SAVE_LOAD) {
 			model = MatrixFactorizationModel.load(jsc.sc(), filterDir);
 		} else {
 			final int rank;
-			try (BufferedReader in = new BufferedReader(new FileReader(new File(filterDir + "/meta")))) {
+			try (BufferedReader in = new BufferedReader(new FileReader(filterDir + "/meta"))) {
 				rank = Integer.parseInt(in.readLine());
 			} catch (Exception e) {
 				throw new RuntimeException("Error reading metadata", e);
@@ -61,51 +56,22 @@ public class CollaborativeFiltering implements Serializable, Recommender {
 					filterDir + PRODUCT_PATH).cache();
 			model = new MatrixFactorizationModel(rank, userFeatures.rdd(), productFeatures.rdd());
 		}
-		jsc.sc().log().info("Model loaded");
-		return model;
+		return new CollaborativeFiltering(model);
 	}
 
-	public CollaborativeFiltering(JavaSparkContext jsc, String filterDir, String path, int rank, double lambda,
-			double alpha) {
-		logger = jsc.sc().log();
-		JavaRDD<String> data = jsc.textFile(path);
-		JavaRDD<Rating> ratings = data.map(new Function<String, Rating>() {
+	private static Rating parseRating(String s) {
+		String[] sarray = s.split(",");
+		return new Rating(Integer.parseInt(sarray[0]), Integer.parseInt(sarray[1]),
+				Math.log(Double.parseDouble(sarray[2])) / LOG2 + 1);
+	}
 
-			private static final long serialVersionUID = -2591217342368981486L;
-
-			@Override
-			public Rating call(String s) {
-				String[] sarray = s.split(",");
-				return new Rating(Integer.parseInt(sarray[0]), Integer.parseInt(sarray[1]),
-						Math.log(Double.parseDouble(sarray[2])) / LOG2 + 1);
-			}
-		}).cache();
-		logger.info("Ratings imported");
-		model = ALS.trainImplicit(JavaRDD.toRDD(ratings), rank, NUM_ITERATIONS, lambda, alpha);
-		logger.info("Model trained");
-		try {
-			saveModel(filterDir);
-		} catch (IOException e) {
-			throw new RuntimeException("Error saving model to disk", e);
-		}
+	public static CollaborativeFiltering train(JavaSparkContext jsc, String path, int rank, int iterations,
+			double lambda, double alpha) {
+		JavaRDD<Rating> ratings = jsc.textFile(path).map(CollaborativeFiltering::parseRating);
+		// ratings.cache();
+		MatrixFactorizationModel model = ALS.trainImplicit(ratings.rdd(), rank, iterations, lambda, alpha);
 		ratings.unpersist();
-	}
-
-	public void saveModel(String filterDir) throws IOException {
-		FileUtils.deleteDirectory(new File(filterDir));
-		if (!MANUAL_SAVE_LOAD) {
-			model.save(model.productFeatures().sparkContext(), filterDir);
-		} else {
-			new File(filterDir).mkdirs();
-			File metadata = new File(filterDir + "/meta");
-			try (BufferedWriter out = new BufferedWriter(new FileWriter(metadata))) {
-				out.write(Integer.toString(model.rank()));
-				out.newLine();
-			}
-			model.userFeatures().saveAsObjectFile(filterDir + USER_PATH);
-			model.productFeatures().saveAsObjectFile(filterDir + PRODUCT_PATH);
-		}
-		logger.info("Model saved");
+		return new CollaborativeFiltering(model);
 	}
 
 	@Override
@@ -122,5 +88,21 @@ public class CollaborativeFiltering implements Serializable, Recommender {
 			// user not included in the model
 		}
 		return Collections.emptyList();
+	}
+
+	public CollaborativeFiltering save(String filterDir) throws IOException {
+		FileUtils.deleteDirectory(new File(filterDir));
+		if (!MANUAL_SAVE_LOAD) {
+			model.save(model.productFeatures().sparkContext(), filterDir);
+		} else {
+			new File(filterDir).mkdirs();
+			try (BufferedWriter out = new BufferedWriter(new FileWriter(filterDir + "/meta"))) {
+				out.write(Integer.toString(model.rank()));
+				out.newLine();
+			}
+			model.userFeatures().saveAsObjectFile(filterDir + USER_PATH);
+			model.productFeatures().saveAsObjectFile(filterDir + PRODUCT_PATH);
+		}
+		return this;
 	}
 }

@@ -1,6 +1,7 @@
 package de.hpi.mmds.parsing.revision;
 
 import com.github.philipp94831.stax2parser.Stax2Parser;
+
 import org.apache.commons.io.FileUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -8,7 +9,11 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import javax.xml.stream.XMLStreamException;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,16 +69,5 @@ public class DumpParser {
 		}
 		long time = System.nanoTime() - start;
 		System.out.println("Total time: " + time / 1_000_000 + "ms");
-	}
-
-	public static String readWebPage(String _url) throws IOException {
-		URL url = new URL(_url);
-		InputStream is = url.openStream();
-		int ptr = 0;
-		StringBuffer buffer = new StringBuffer();
-		while ((ptr = is.read()) != -1) {
-			buffer.append((char) ptr);
-		}
-		return buffer.toString();
 	}
 }

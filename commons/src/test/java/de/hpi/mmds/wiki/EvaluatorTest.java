@@ -17,7 +17,7 @@ import static org.junit.Assert.assertEquals;
 
 public class EvaluatorTest {
 
-	public static final double DOUBLE_TOLERANCE = 0.001;
+	public static final double DOUBLE_TOLERANCE = 1e-3;
 	private static final Recommender recommender = (userId, articles, howMany) -> Arrays
 			.asList(new Recommendation(1.0, 10), new Recommendation(1.0, 11));
 	private static Edits test;
@@ -51,7 +51,7 @@ public class EvaluatorTest {
 	@Test
 	public void test() {
 		Evaluator eval = new Evaluator(recommender, test, training, out);
-		Map<Integer, Result> results = eval.evaluate(3);
+		Map<Integer, Result> results = eval.evaluate(3, -1);
 		assertEquals(3, results.size());
 		assertEquals(1.0, results.get(1).precision(), DOUBLE_TOLERANCE);
 		assertEquals(1.0, results.get(1).meanAveragePrecision(), DOUBLE_TOLERANCE);

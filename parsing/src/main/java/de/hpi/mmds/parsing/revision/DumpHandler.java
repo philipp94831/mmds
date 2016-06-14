@@ -1,22 +1,23 @@
 package de.hpi.mmds.parsing.revision;
 
+import com.github.philipp94831.stax2parser.DefaultHandler;
+
+import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Stack;
+import java.util.logging.Logger;
 
-import javax.xml.namespace.QName;
+class DumpHandler extends DefaultHandler {
 
-import com.github.philipp94831.stax2parser.DefaultHandler;
-
-public class DumpHandler extends DefaultHandler {
-
+	private static final Logger LOGGER = Logger.getLogger(DumpHandler.class.getName());
+	private final DumpWriter out;
 	private StringBuilder buf;
 	private long currentArticle;
 	private int currentNamespace;
 	private Revision currentRevision;
 	private boolean err;
 	private boolean inText = false;
-	private final DumpWriter out;
 	private Stack<String> parents;
 
 	public DumpHandler(DumpWriter out) {
@@ -24,21 +25,10 @@ public class DumpHandler extends DefaultHandler {
 	}
 
 	@Override
-	public void attribute(QName qName, String value) {
-		if (isInText() && qName.getLocalPart().equals("bytes")) {
-			currentRevision.setTextLength(Integer.parseInt(value));
-		}
-	}
-
-	@Override
 	public void characters(String ch) {
 		if (inText) {
 			buf.append(ch);
 		}
-	}
-
-	public void close() throws IOException {
-		out.close();
 	}
 
 	@Override
@@ -56,44 +46,41 @@ public class DumpHandler extends DefaultHandler {
 			try {
 				currentRevision.setTimestamp(buf.toString());
 			} catch (ParseException e) {
+				LOGGER.severe("Error parsing timestamp " + buf.toString() + ": " + e.getMessage());
 				err = true;
 			}
 		}
 		if (isInRevision()) {
 			if (!err && currentRevision.getUserId() != 0 && currentNamespace == 0) {
-				out.write(currentRevision);
+				try {
+					out.write(currentRevision);
+				} catch (IOException e) {
+					LOGGER.severe("Error writing revision: " + e.getMessage());
+				}
 			}
 			currentRevision = null;
 		}
 		parents.pop();
 	}
 
-	private boolean isInContributorId() {
-		return parents.peek().equals("id") && parents.elementAt(parents.size() - 2).equals("contributor");
-	}
-
 	private boolean isInId() {
 		return parents.peek().equals("id") && parents.elementAt(parents.size() - 2).equals("page");
-	}
-
-	private boolean isInMinor() {
-		return parents.peek().equals("minor") && parents.elementAt(parents.size() - 2).equals("revision");
 	}
 
 	private boolean isInNamespace() {
 		return parents.peek().equals("ns") && parents.elementAt(parents.size() - 2).equals("page");
 	}
 
-	private boolean isInRevision() {
-		return parents.peek().equals("revision");
-	}
-
-	private boolean isInText() {
-		return parents.peek().equals("text") && parents.elementAt(parents.size() - 2).equals("revision");
+	private boolean isInContributorId() {
+		return parents.peek().equals("id") && parents.elementAt(parents.size() - 2).equals("contributor");
 	}
 
 	private boolean isInTimestamp() {
 		return parents.peek().equals("timestamp") && parents.elementAt(parents.size() - 2).equals("revision");
+	}
+
+	private boolean isInRevision() {
+		return parents.peek().equals("revision");
 	}
 
 	@Override
@@ -115,5 +102,24 @@ public class DumpHandler extends DefaultHandler {
 		if (isInMinor()) {
 			currentRevision.setMinor(true);
 		}
+	}
+
+	@Override
+	public void attribute(QName qName, String value) {
+		if (isInText() && qName.getLocalPart().equals("bytes")) {
+			currentRevision.setTextLength(Integer.parseInt(value));
+		}
+	}
+
+	private boolean isInText() {
+		return parents.peek().equals("text") && parents.elementAt(parents.size() - 2).equals("revision");
+	}
+
+	private boolean isInMinor() {
+		return parents.peek().equals("minor") && parents.elementAt(parents.size() - 2).equals("revision");
+	}
+
+	public void close() throws IOException {
+		out.close();
 	}
 }

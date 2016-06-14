@@ -19,10 +19,10 @@ public class App {
 		try (JavaSparkContext jsc = SparkUtil.getContext("MMDS Wiki")) {
 			Edits test = new Edits(jsc, TEST_DIR);
 			Edits training = new Edits(jsc, TRAINING_DIR);
-			MultiRecommender recommender = new MultiRecommender();
-			recommender.add(new CollaborativeFiltering(jsc, CF_FILTER_DIR)).add(new CategoryAnalyzer()).add(new LDA());
+			MultiRecommender recommender = new MultiRecommender().add(CollaborativeFiltering.load(jsc, CF_FILTER_DIR))
+					.add(new CategoryAnalyzer()).add(new LDA());
 			Evaluator eval = new Evaluator(recommender, test, training, new File(OUT_FILE));
-			eval.evaluate(200);
+			eval.evaluate(200, 100);
 		}
 	}
 }
