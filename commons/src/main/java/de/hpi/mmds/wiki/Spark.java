@@ -5,7 +5,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 
 import scala.Tuple2;
 
-public class SparkUtil {
+public class Spark {
 
 	public static JavaSparkContext getContext(String name) {
 		SparkConf conf = defaultConf(name);

@@ -12,12 +12,20 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URI;
 
-public class HDFSUtil implements Closeable {
+public class HDFS implements Closeable {
 
 	private final FileSystem fs;
 
-	public HDFSUtil(URI uri) throws IOException {
-		this.fs = FileSystem.get(uri, new Configuration());
+	public HDFS(FileSystem fs) {
+		this.fs = fs;
+	}
+
+	public static HDFS get(URI uri) throws IOException {
+		return new HDFS(FileSystem.get(uri, new Configuration()));
+	}
+
+	public static HDFS getLocal() throws IOException {
+		return new HDFS(FileSystem.get(new Configuration()));
 	}
 
 	@Override
@@ -25,7 +33,7 @@ public class HDFSUtil implements Closeable {
 		fs.close();
 	}
 
-	public BufferedWriter write(Path file) throws IOException {
+	public BufferedWriter create(Path file) throws IOException {
 		return new BufferedWriter(new OutputStreamWriter(fs.create(file)));
 	}
 

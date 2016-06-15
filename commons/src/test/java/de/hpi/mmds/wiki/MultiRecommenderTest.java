@@ -18,7 +18,7 @@ public class MultiRecommenderTest {
 
 	@BeforeClass
 	public static void setup() {
-		jsc = SparkUtil.getContext(MultiRecommenderTest.class.getName());
+		jsc = Spark.getContext(MultiRecommenderTest.class.getName());
 	}
 
 	@AfterClass

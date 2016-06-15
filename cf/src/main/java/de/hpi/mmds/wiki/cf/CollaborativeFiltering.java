@@ -1,9 +1,11 @@
 package de.hpi.mmds.wiki.cf;
 
+import de.hpi.mmds.wiki.HDFS;
 import de.hpi.mmds.wiki.Recommendation;
 import de.hpi.mmds.wiki.Recommender;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.mllib.recommendation.ALS;
@@ -15,8 +17,6 @@ import scala.Tuple2;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
@@ -39,13 +39,13 @@ public class CollaborativeFiltering implements Serializable, Recommender {
 		this.model = model;
 	}
 
-	public static CollaborativeFiltering load(JavaSparkContext jsc, String filterDir) {
+	public static CollaborativeFiltering load(JavaSparkContext jsc, String filterDir, HDFS fs) {
 		final MatrixFactorizationModel model;
 		if (!MANUAL_SAVE_LOAD) {
 			model = MatrixFactorizationModel.load(jsc.sc(), filterDir);
 		} else {
 			final int rank;
-			try (BufferedReader in = new BufferedReader(new FileReader(filterDir + "/meta"))) {
+			try (BufferedReader in = fs.read(new Path(filterDir + "/meta"))) {
 				rank = Integer.parseInt(in.readLine());
 			} catch (Exception e) {
 				throw new RuntimeException("Error reading metadata", e);
@@ -90,13 +90,12 @@ public class CollaborativeFiltering implements Serializable, Recommender {
 		return Collections.emptyList();
 	}
 
-	public CollaborativeFiltering save(String filterDir) throws IOException {
+	public CollaborativeFiltering save(String filterDir, HDFS fs) throws IOException {
 		FileUtils.deleteDirectory(new File(filterDir));
 		if (!MANUAL_SAVE_LOAD) {
 			model.save(model.productFeatures().sparkContext(), filterDir);
 		} else {
-			new File(filterDir).mkdirs();
-			try (BufferedWriter out = new BufferedWriter(new FileWriter(filterDir + "/meta"))) {
+			try (BufferedWriter out = fs.create(new Path(filterDir + "/meta"))) {
 				out.write(Integer.toString(model.rank()));
 				out.newLine();
 			}
