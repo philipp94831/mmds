@@ -21,31 +21,41 @@ import static org.junit.Assert.assertTrue;
 
 public class HDFSTest {
 
-	private static HDFS fs;
 	private static MiniDFSCluster hdfsCluster;
 
 	@BeforeClass
-	public static void setupClass() throws URISyntaxException, IOException {
+	public static void setupClass() throws IOException {
 		Configuration conf = new Configuration();
-		File baseDir = new File("./target/hdfs/").getAbsoluteFile();
-		if(baseDir.exists()) {
+		File baseDir = new File("target/hdfs/").getAbsoluteFile();
+		if (baseDir.exists()) {
 			FileUtils.forceDelete(baseDir);
 		}
 		conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
 		MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(conf);
 		hdfsCluster = builder.build();
-		fs = HDFS.get(new URI("hdfs://localhost:"+ hdfsCluster.getNameNodePort() + "/"));
 	}
 
 	@AfterClass
 	public static void tearDownClass() throws IOException {
-		fs.close();
 		hdfsCluster.shutdown();
 	}
 
 	@Test
-	public void testHDFS() throws IOException {
-		Path file = new Path("/data/mmds16/wiki/meta.txt");
+	public void testHDFS() throws IOException, URISyntaxException {
+		try (HDFS fs = HDFS.get(new URI("hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/"))) {
+			readWriteFile(fs);
+		}
+	}
+
+	@Test
+	public void testLocal() throws IOException {
+		try (HDFS local = HDFS.getLocal()) {
+			readWriteFile(local);
+		}
+	}
+
+	private void readWriteFile(HDFS fs) throws IOException {
+		Path file = new Path("foo/bar/test.txt");
 		if (fs.exists(file)) {
 			fs.delete(file);
 		}
@@ -62,37 +72,11 @@ public class HDFSTest {
 			}
 			assertEquals(1, i);
 		}
-		if (fs.exists(file)) {
-			fs.delete(file);
+		Path dir = new Path("foo");
+		if (fs.exists(dir)) {
+			fs.delete(dir);
 		}
 		assertFalse(fs.exists(file));
-	}
-
-	@Test
-	public void testLocal() throws IOException {
-		try(HDFS local = HDFS.getLocal()) {
-			Path file = new Path("foo/bar/test.txt");
-			if (local.exists(file)) {
-				local.delete(file);
-			}
-			assertFalse(local.exists(file));
-			try (BufferedWriter out = local.create(file)) {
-				out.write("hello");
-			}
-			assertTrue(local.exists(file));
-			try (BufferedReader in = local.read(file)) {
-				int i = 0;
-				for (String line = in.readLine(); line != null; line = in.readLine(), i++) {
-					assertEquals(5, line.length());
-					assertEquals("hello", line);
-				}
-				assertEquals(1, i);
-			}
-			if (local.exists(file)) {
-				local.delete(file);
-			}
-			assertFalse(local.exists(file));
-		}
 	}
 
 }

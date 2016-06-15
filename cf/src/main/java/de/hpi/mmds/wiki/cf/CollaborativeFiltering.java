@@ -4,7 +4,6 @@ import de.hpi.mmds.wiki.HDFS;
 import de.hpi.mmds.wiki.Recommendation;
 import de.hpi.mmds.wiki.Recommender;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -16,7 +15,6 @@ import scala.Tuple2;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
@@ -29,8 +27,8 @@ public class CollaborativeFiltering implements Serializable, Recommender {
 
 	private static final String PRODUCT_PATH = "/product";
 	private static final String USER_PATH = "/user";
+	private static final String META_PATH = "/meta";
 	private static final double LOG2 = Math.log(2);
-	private static final boolean MANUAL_SAVE_LOAD = true;
 	private static final double RECOMMEND_THRESHOLD = 0.0;
 	private static final long serialVersionUID = 5290472017062948755L;
 	private final MatrixFactorizationModel model;
@@ -40,22 +38,17 @@ public class CollaborativeFiltering implements Serializable, Recommender {
 	}
 
 	public static CollaborativeFiltering load(JavaSparkContext jsc, String filterDir, HDFS fs) {
-		final MatrixFactorizationModel model;
-		if (!MANUAL_SAVE_LOAD) {
-			model = MatrixFactorizationModel.load(jsc.sc(), filterDir);
-		} else {
-			final int rank;
-			try (BufferedReader in = fs.read(new Path(filterDir + "/meta"))) {
-				rank = Integer.parseInt(in.readLine());
-			} catch (Exception e) {
-				throw new RuntimeException("Error reading metadata", e);
-			}
-			final JavaRDD<Tuple2<Object, double[]>> userFeatures = jsc.<Tuple2<Object, double[]>>objectFile(
-					filterDir + USER_PATH).cache();
-			final JavaRDD<Tuple2<Object, double[]>> productFeatures = jsc.<Tuple2<Object, double[]>>objectFile(
-					filterDir + PRODUCT_PATH).cache();
-			model = new MatrixFactorizationModel(rank, userFeatures.rdd(), productFeatures.rdd());
+		final int rank;
+		try (BufferedReader in = fs.read(new Path(filterDir + META_PATH))) {
+			rank = Integer.parseInt(in.readLine());
+		} catch (Exception e) {
+			throw new RuntimeException("Error reading metadata", e);
 		}
+		final JavaRDD<Tuple2<Object, double[]>> userFeatures = jsc.<Tuple2<Object, double[]>>objectFile(
+				filterDir + USER_PATH).cache();
+		final JavaRDD<Tuple2<Object, double[]>> productFeatures = jsc.<Tuple2<Object, double[]>>objectFile(
+				filterDir + PRODUCT_PATH).cache();
+		MatrixFactorizationModel model = new MatrixFactorizationModel(rank, userFeatures.rdd(), productFeatures.rdd());
 		return new CollaborativeFiltering(model);
 	}
 
@@ -91,17 +84,13 @@ public class CollaborativeFiltering implements Serializable, Recommender {
 	}
 
 	public CollaborativeFiltering save(String filterDir, HDFS fs) throws IOException {
-		FileUtils.deleteDirectory(new File(filterDir));
-		if (!MANUAL_SAVE_LOAD) {
-			model.save(model.productFeatures().sparkContext(), filterDir);
-		} else {
-			try (BufferedWriter out = fs.create(new Path(filterDir + "/meta"))) {
-				out.write(Integer.toString(model.rank()));
-				out.newLine();
-			}
-			model.userFeatures().saveAsObjectFile(filterDir + USER_PATH);
-			model.productFeatures().saveAsObjectFile(filterDir + PRODUCT_PATH);
+		fs.delete(new Path(filterDir));
+		try (BufferedWriter out = fs.create(new Path(filterDir + META_PATH))) {
+			out.write(Integer.toString(model.rank()));
+			out.newLine();
 		}
+		model.userFeatures().saveAsObjectFile(filterDir + USER_PATH);
+		model.productFeatures().saveAsObjectFile(filterDir + PRODUCT_PATH);
 		return this;
 	}
 }
