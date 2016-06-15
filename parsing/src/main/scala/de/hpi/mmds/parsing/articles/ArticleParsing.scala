@@ -30,21 +30,25 @@ class ArticleParser(input: String, output: String) {
     
     // read file
     val rdd_input = sc.newAPIHadoopFile(input, classOf[XmlInputFormat], classOf[LongWritable], classOf[Text])
-    val rdd_text = rdd_input.map {
-      case (writable, text) => (writable.toString, text.toString)
-    }
 
-    val rdd_single_line = rdd_text
-        .map{ s =>
-            val xml = XML.loadString(s._2)
-            val id = (xml \ "id").text.toInt
-            val title = (xml \ "title").text
-            val text = (xml \ "revision" \ "text").text.replaceAll("\\W", " ")
-            val tknzed = text.split("\\W").filter(_.size > 3).toList
-          (id, title, tknzed )
-        }
+    val rdd_xml_parsed = rdd_input.map{ s =>
+        val xml = XML.loadString(s._2.toString)
+        val id = (xml \ "id").text.toInt
+        val title = (xml \ "title").text
+        val text = (xml \ "revision" \ "text").text
+      (id, title, text )
+    }
+    val rdd_no_redirect = rdd_xml_parsed.filter(s => !s._3.startsWith("#REDIRECT"))
+    val rdd_no_special_characters = rdd_no_redirect.map{ s =>
+        val replaced = s._3.replaceAll("\\W", " ")
+      (s._1, s._2, replaced)
+    }
+    val rdd_csv = rdd_no_special_characters.map{ s =>
+        val text = s._1.toString + ',' + s._2 + ',' + s._3
+      (text)
+    }
     
-    rdd_single_line.saveAsTextFile(output)
+    rdd_csv.saveAsTextFile(output)
   }
 }
 
