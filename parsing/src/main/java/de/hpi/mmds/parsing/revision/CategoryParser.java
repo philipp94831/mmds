@@ -1,6 +1,5 @@
 package de.hpi.mmds.parsing.revision;
 
-import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaRDD;
@@ -8,8 +7,11 @@ import org.apache.spark.api.java.JavaSparkContext;
 import de.hpi.mmds.wiki.SparkUtil;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CategoryParser {
 
@@ -24,49 +26,71 @@ public class CategoryParser {
 	public static void main(String[] args)
 	{
 		// First run
-//		parseCategories();
-//		parseCategoryLinks();
+		parseCategories();
+		parseCategoryLinks();
 
 		// Second run
 		canonicalizateCategories();
 	}
 
-	private static void canonicalizateCategories() {
-
+	private static void canonicalizateCategories()
+	{
 		HashMap<String, Integer> categories = new HashMap<>();
-		CSVReader reader;
-
-		try {
-			reader = new CSVReader(new FileReader(OUTPUT_DIR + "category.txt/part-00000"));
-			String[] line;
-			while ((line = reader.readNext()) != null) {
-				categories.put(line[1], Integer.parseInt(line[0]));
-            }
+		try (Stream<String> stream = Files.lines(Paths.get(OUTPUT_DIR + "category.txt/part-00000"))) {
+			stream.forEach(line -> {
+				List<String> parts = parseCSVLine(line);
+				categories.put(parts.get(1), Integer.parseInt(parts.get(0)));
+			});
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
 		try (JavaSparkContext sc = SparkUtil.getContext()) {
 			JavaRDD<String> categoryLinks = sc.textFile(OUTPUT_DIR + "categorylinks.txt/part-00000");
-			JavaRDD<String> resolved = categoryLinks.map(line -> {
-				String[] entry = csvToEntry(line);
+
+
+			//
+			// Pages
+			//
+
+			JavaRDD<String> pages = categoryLinks.filter(line -> {
+				List<String> entry = parseCSVLine(line);
 				assert entry != null;
 
-				Integer categoryId = categories.get(entry[1]);
-				if (categoryId == null) {
-					//System.err.println("Id of category '" + entry[1] + "' is unknown, skipping.");
-					return ""; // TODO: filter empty liens afterwards
-				}
+				return entry.get(6).equals("page");
+			});
 
-				if (entry.length < 7) {
-					System.err.println("OUT OF BOUNDS: " + Arrays.toString(entry));
+			JavaRDD<String> resolvedPages = pages.map(line -> {
+				List<String> entry = parseCSVLine(line);
+				assert entry != null;
+
+				return entryToCsv(Arrays.asList(entry.get(0), categories.get(entry.get(1)).toString()));
+			});
+			writeOutput(resolvedPages, OUTPUT_DIR + "resolved_pages.txt");
+
+
+			//
+			// Subcats
+			//
+
+			JavaRDD<String> subcats = categoryLinks.filter(line -> {
+				List<String> entry = parseCSVLine(line);
+				assert entry != null;
+				return entry.get(6).equals("subcat");
+			});
+
+			JavaRDD<String> resolvedSubcats = subcats.map(line -> {
+				List<String> entry = parseCSVLine(line);
+				assert entry != null;
+
+				Integer categoryId = categories.get(entry.get(1));
+				if (categoryId == null) {
 					return "";
 				}
 
-				return entryToCsv(Arrays.asList(entry[0], categoryId.toString(), entry[6]));
+				return entryToCsv(Arrays.asList(entry.get(0), categoryId.toString()));
 			});
-
-			writeOutput(resolved, OUTPUT_DIR + "resolved.txt");
+			writeOutput(resolvedSubcats, OUTPUT_DIR + "resolved_subcats.txt");
 
 		} catch (Exception e) {
 			// nothing to do
@@ -87,6 +111,7 @@ public class CategoryParser {
 			// nothing to do
 		}
 	}
+
 
 	private static void parseCategoryLinks()
 	{
@@ -166,8 +191,53 @@ public class CategoryParser {
 	}
 
 
+	public static List<String> parseCSVLine(String line)
+	{
+		List<String> parts = new ArrayList<>();
+		String partBuffer = "";
+		int currentState = STATE_OUTSIDE;
+
+		for (int i = 0; i < line.length(); i++) {
+			char ch = line.charAt(i);
+
+			switch (currentState) {
+				case STATE_OUTSIDE:
+					switch (ch) {
+						case '"':
+							currentState = STATE_IN_ENTRY;
+							break;
+						case ',':
+							break;
+						default:
+							partBuffer += ch;
+							currentState = STATE_IN_ENTRY;
+					}
+					break;
+
+				case STATE_IN_ENTRY:
+					switch (ch) {
+						case '"':
+							parts.add(partBuffer);
+							partBuffer = "";
+							currentState = STATE_OUTSIDE;
+							break;
+						case ',':
+							parts.add(partBuffer);
+							partBuffer = "";
+							currentState = STATE_OUTSIDE;
+						default:
+							partBuffer += ch;
+					}
+					break;
+			}
+		}
+
+		return parts;
+	}
+
+
 	public static String entryToCsv(List<String> entry) {
-		return entryToCsv(entry, '"');
+		return entryToCsv(entry,  CSVWriter.NO_QUOTE_CHARACTER);
 	}
 
 
@@ -192,16 +262,5 @@ public class CategoryParser {
 		}
 
 		data.coalesce(1).saveAsTextFile(outFile);
-	}
-
-	public static String[] csvToEntry(String csvLine) {
-		CSVReader reader = new CSVReader(new StringReader(csvLine));
-		try {
-			return reader.readNext();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		return null;
 	}
 }

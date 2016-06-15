@@ -30,33 +30,9 @@ public class CategoryParserTest {
 		);
 	}
 
-//	@Test
-//	public void testParseArrayLikeLineSimple() {
-//		String line = "[a, b, c]\n";
-//		List entries = CategoryParser.parseArrayLikeLine(line);
-//		Assert.assertEquals("[[a, b, c]]", entries.toString());
-//	}
-//
-//	@Test
-//	public void testParseArrayLikeLineEscaped() {
-//		String line = "[a, b\\,, c']\n";
-//		List entries = CategoryParser.parseArrayLikeLine(line);
-//		Assert.assertEquals("[[a, b,, c']]", entries.toString());
-//	}
-
 	@Test
 	public void testEntryToCsv() {
 		String[] entry = {"a,", "b,\",", "c'"};
 		Assert.assertEquals("\"a,\",\"b,\"\",\",\"c'\"", CategoryParser.entryToCsv(Arrays.asList(entry)));
-	}
-
-	@Test
-	public void testCsvToEntry()
-	{
-		String csv = "\"a,\",\"b,\"\",\",c'\r\n";
-		Assert.assertArrayEquals(
-			new String[]{"a,", "b,\",", "c'"},
-			CategoryParser.csvToEntry(csv)
-		);
 	}
 }
