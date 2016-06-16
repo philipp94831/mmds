@@ -62,11 +62,12 @@ class ArticleParser(input: String, output: String) {
         s => (s._1.toString + ';' + s._2 + ';' + s._3)
     })
     
-    var vocab = model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.mkString(",")
-    val rdd_vocab = sc.parallelize(vocab)
+    var vocab_string = model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.mkString(",")
+    var vocab_array = Array(vocab_string)
+    val rdd_vocab = sc.parallelize(vocab_array)
     
     rdd_output.saveAsTextFile(output)
-    rdd_vocab.saveAsTextFile(output + "-vocab")
+    rdd_vocab.saveAsTextFile(output + "/vocab")
   }
   
   private def read_files(
@@ -86,14 +87,16 @@ class ArticleParser(input: String, output: String) {
       .map({ s =>
           val xml = XML.loadString(s._2.toString)
           val id = (xml \ "id").text.toInt
+          val ns = (xml \ "ns").text.toInt
           val title = (xml \ "title").text
           val text = (xml \ "revision" \ "text").text
-        (id, title, text )
+        (id, ns, title, text )
       })
-      .filter(s => !s._3.startsWith("#REDIRECT"))
+      .filter(s => s._2 == 0)
+      .filter(s => !s._4.startsWith("#REDIRECT"))
       .map({ s =>
-          val replaced = s._3.replaceAll("\\W", " ")
-        (s._1, s._2, replaced)
+          val replaced = s._4.replaceAll("\\W", " ")
+        (s._1, s._3, replaced)
       })
     (rdd_preprocessing)
   }
