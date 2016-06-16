@@ -19,6 +19,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * <b>IMPORTANT:</b> In order to get the MiniDFCluster to work on Windows, you need to have hadoop including
+ * winutils.exe in your PATH
+ */
 public class HDFSTest {
 
 	private static MiniDFSCluster hdfsCluster;
@@ -38,20 +42,6 @@ public class HDFSTest {
 	@AfterClass
 	public static void tearDownClass() throws IOException {
 		hdfsCluster.shutdown();
-	}
-
-	@Test
-	public void testHDFS() throws IOException, URISyntaxException {
-		try (HDFS fs = HDFS.get(new URI("hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/"))) {
-			readWriteFile(fs);
-		}
-	}
-
-	@Test
-	public void testLocal() throws IOException {
-		try (HDFS local = HDFS.getLocal()) {
-			readWriteFile(local);
-		}
 	}
 
 	private void readWriteFile(HDFS fs) throws IOException {
@@ -77,6 +67,20 @@ public class HDFSTest {
 			fs.delete(dir);
 		}
 		assertFalse(fs.exists(file));
+	}
+
+	@Test
+	public void testHDFS() throws IOException, URISyntaxException {
+		try (HDFS fs = HDFS.get(new URI("hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/"))) {
+			readWriteFile(fs);
+		}
+	}
+
+	@Test
+	public void testLocal() throws IOException {
+		try (HDFS local = HDFS.getLocal()) {
+			readWriteFile(local);
+		}
 	}
 
 }

@@ -64,4 +64,21 @@ public class EvaluatorTest {
 		assertEquals(0.0, results.get(3).recall(), DOUBLE_TOLERANCE);
 	}
 
+	@Test
+	public void testFromFile() {
+		Evaluator eval = new Evaluator(recommender, training,
+				Thread.currentThread().getContextClassLoader().getResource("ground_truth.csv").getPath(), out);
+		Map<Integer, Result> results = eval.evaluate(3, -1);
+		assertEquals(3, results.size());
+		assertEquals(1.0, results.get(1).precision(), DOUBLE_TOLERANCE);
+		assertEquals(1.0, results.get(1).meanAveragePrecision(), DOUBLE_TOLERANCE);
+		assertEquals(1.0, results.get(1).recall(), DOUBLE_TOLERANCE);
+		assertEquals(0.5, results.get(2).precision(), DOUBLE_TOLERANCE);
+		assertEquals(1.0, results.get(2).meanAveragePrecision(), DOUBLE_TOLERANCE);
+		assertEquals(1.0 / 3, results.get(2).recall(), DOUBLE_TOLERANCE);
+		assertEquals(0.0, results.get(3).precision(), DOUBLE_TOLERANCE);
+		assertEquals(0.0, results.get(3).meanAveragePrecision(), DOUBLE_TOLERANCE);
+		assertEquals(0.0, results.get(3).recall(), DOUBLE_TOLERANCE);
+	}
+
 }

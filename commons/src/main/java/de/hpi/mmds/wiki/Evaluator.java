@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 
 import scala.Tuple2;
 
@@ -31,6 +32,21 @@ public class Evaluator {
 	private final Recommender recommender;
 	private final JavaPairRDD<Integer, Set<Integer>> groundTruths;
 
+	public Evaluator(Recommender recommender, Edits training, String ground_truth, File out) {
+		this.recommender = recommender;
+		this.training = training.cache();
+		this.groundTruths = JavaSparkContext.fromSparkContext(training.getAggregatedEdits().context())
+				.textFile(ground_truth).mapToPair(Evaluator::parseGroundTruth).mapValues(i -> {
+					Set<Integer> s = new HashSet<>();
+					s.add(i);
+					return s;
+				}).reduceByKey((s1, s2) -> {
+					s1.addAll(s2);
+					return s1;
+				});
+		this.out = out;
+	}
+
 	public Evaluator(Recommender recommender, Edits test, Edits training, File out) {
 		this.recommender = recommender;
 		this.training = training.cache();
@@ -41,6 +57,14 @@ public class Evaluator {
 				t -> (Set<Integer>) Sets.difference(Sets.newHashSet(t._1), Sets.newHashSet(t._2)).immutableCopy())
 				.filter(t -> !t._2.isEmpty());
 		this.out = out;
+	}
+
+	private static Tuple2<Integer, Integer> parseGroundTruth(String s) {
+		String[] split = s.split(",");
+		if (split.length != 2) {
+			throw new IllegalStateException("Data malformed");
+		}
+		return new Tuple2<>(Integer.parseInt(split[0]), Integer.parseInt(split[1]));
 	}
 
 	public Map<Integer, Result> evaluate(int num, int howMany) {
@@ -106,22 +130,20 @@ public class Evaluator {
 		}
 		if (!results.isEmpty()) {
 			int median = results.size() / 2;
-			System.out.println("AVG Precision: " + results.values().stream().mapToDouble(Result::precision).average()
+			LOGGER.info("AVG Precision: " + results.values().stream().mapToDouble(Result::precision).average()
 					.getAsDouble());
-			System.out.println(
-					"AVG MAP: " + results.values().stream().mapToDouble(Result::meanAveragePrecision).average()
-							.getAsDouble());
-			System.out.println(
-					"AVG Recall: " + results.values().stream().mapToDouble(Result::recall).average().getAsDouble());
-			System.out.println("AVG F-Measure: " + results.values().stream().mapToDouble(Result::fmeasure).average()
+			LOGGER.info("AVG MAP: " + results.values().stream().mapToDouble(Result::meanAveragePrecision).average()
 					.getAsDouble());
-			System.out.println("Median Precision: " + results.values().stream().map(Result::precision).sorted()
+			LOGGER.info("AVG Recall: " + results.values().stream().mapToDouble(Result::recall).average().getAsDouble());
+			LOGGER.info("AVG F-Measure: " + results.values().stream().mapToDouble(Result::fmeasure).average()
+					.getAsDouble());
+			LOGGER.info("Median Precision: " + results.values().stream().map(Result::precision).sorted()
 					.collect(Collectors.toList()).get(median));
-			System.out.println("Median MAP: " + results.values().stream().map(Result::meanAveragePrecision).sorted()
+			LOGGER.info("Median MAP: " + results.values().stream().map(Result::meanAveragePrecision).sorted()
 					.collect(Collectors.toList()).get(median));
-			System.out.println("Median Recall: " + results.values().stream().map(Result::recall).sorted()
+			LOGGER.info("Median Recall: " + results.values().stream().map(Result::recall).sorted()
 					.collect(Collectors.toList()).get(median));
-			System.out.println("Median F-Measure: " + results.values().stream().map(Result::fmeasure).sorted()
+			LOGGER.info("Median F-Measure: " + results.values().stream().map(Result::fmeasure).sorted()
 					.collect(Collectors.toList()).get(median));
 		}
 		return results;
