@@ -62,7 +62,11 @@ class ArticleParser(input: String, output: String) {
         s => (s._1.toString + ';' + s._2 + ';' + s._3)
     })
     
+    var vocab = model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.mkString(",")
+    val rdd_vocab = sc.parallelize(vocab)
+    
     rdd_output.saveAsTextFile(output)
+    rdd_vocab.saveAsTextFile(output + "-vocab")
   }
   
   private def read_files(
