@@ -54,6 +54,10 @@ public class Edits implements Serializable {
 		return edits.keys().distinct();
 	}
 
+	public JavaRDD<Integer> getArticles() {
+		return edits.values().flatMap(i -> i).distinct();
+	}
+
 	public Edits cache() {
 		edits.cache();
 		return this;

@@ -19,7 +19,7 @@ public class EvaluatorTest {
 
 	public static final double DOUBLE_TOLERANCE = 1e-3;
 	private static final Recommender recommender = (userId, articles, howMany) -> Arrays
-			.asList(new Recommendation(1.0, 10), new Recommendation(1.0, 11));
+			.asList(new Recommendation(1.0, 1), new Recommendation(1.0, 2));
 	private static Edits test;
 	private static Edits training;
 	private static JavaSparkContext jsc;

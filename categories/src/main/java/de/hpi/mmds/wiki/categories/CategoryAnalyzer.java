@@ -49,7 +49,7 @@ public class CategoryAnalyzer implements Recommender {
 				.mapToPair(t -> t._2).cache();
 		long articleCount = articleCategories.values().count();
 		JavaPairRDD<Integer, Double> entropies = transitiveCategoriesForArticles.mapValues(i -> 1)
-				.reduceByKey(Integer::sum).mapValues(i -> 1.0 - (double) i / articleCount);
+				.reduceByKey(Integer::sum).filter(t -> t._2 > 0).mapValues(i -> 1.0 - (double) i / articleCount);
 
 		JavaPairRDD<Integer, Iterable<Tuple2<Integer, Double>>> categoriesPerArticle = transitiveCategoriesForArticles
 				.join(entropies).mapToPair(t -> new Tuple2<>(t._2._1, new Tuple2<>(t._1, t._2._2))).groupByKey();

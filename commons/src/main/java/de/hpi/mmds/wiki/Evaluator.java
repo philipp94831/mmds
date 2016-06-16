@@ -21,18 +21,25 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static de.hpi.mmds.wiki.spark.SparkFunctions.swap;
+
 public class Evaluator {
 
 	private static final Logger LOGGER = Logger.getLogger(Evaluator.class.getName());
-	private final Edits test;
 	private final Edits training;
 	private final File out;
 	private final Recommender recommender;
+	private final JavaPairRDD<Integer, Set<Integer>> groundTruths;
 
 	public Evaluator(Recommender recommender, Edits test, Edits training, File out) {
 		this.recommender = recommender;
 		this.training = training.cache();
-		this.test = test;
+		JavaPairRDD<Integer, Iterable<Integer>> possibleRecommendations = test.getAllEdits().mapToPair(swap())
+				.join(training.getArticles().mapToPair(article -> new Tuple2<>(article, null)))
+				.mapToPair(t -> new Tuple2<>(t._2._1, t._1)).groupByKey();
+		this.groundTruths = possibleRecommendations.join(training.getAggregatedEdits()).mapValues(
+				t -> (Set<Integer>) Sets.difference(Sets.newHashSet(t._1), Sets.newHashSet(t._2)).immutableCopy())
+				.filter(t -> !t._2.isEmpty());
 		this.out = out;
 	}
 
@@ -43,9 +50,6 @@ public class Evaluator {
 	public Map<Integer, Result> evaluate(int num, int howMany, long seed) {
 		Map<Integer, Result> results = new HashMap<>();
 		int i = 0;
-		JavaPairRDD<Integer, Set<Integer>> groundTruths = test.getAggregatedEdits().join(training.getAggregatedEdits())
-				.mapValues(t -> (Set<Integer>) Sets.difference(Sets.newHashSet(t._1), Sets.newHashSet(t._2))
-						.immutableCopy()).filter(t -> !t._2.isEmpty());
 		double totalPrecision = 0.0;
 		double totalMAP = 0.0;
 		double totalRecall = 0.0;
@@ -61,7 +65,7 @@ public class Evaluator {
 				throw new RuntimeException("Could not delete output file " + out.getPath(), e);
 			}
 		}
-		LOGGER.info("Sampling " + num + " out of " + groundTruths.count() + " users");
+		//LOGGER.info("Sampling " + num + " out of " + groundTruths.count() + " users");
 		try (BufferedWriter writer = new BufferedWriter(new FileWriter(out))) {
 			for (Tuple2<Integer, Set<Integer>> t : groundTruths.takeSample(false, num, seed)) {
 				int user = t._1;
