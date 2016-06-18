@@ -67,7 +67,7 @@ class ArticleParser(input: String, output: String) {
     val rdd_vocab = sc.parallelize(vocab_array)
     
     rdd_output.saveAsTextFile(output)
-    rdd_vocab.saveAsTextFile(output + "/vocab")
+    rdd_vocab.saveAsTextFile(output + "-vocab")
   }
   
   private def read_files(
