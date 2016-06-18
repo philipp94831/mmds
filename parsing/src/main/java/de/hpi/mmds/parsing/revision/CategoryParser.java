@@ -3,7 +3,7 @@ package de.hpi.mmds.parsing.revision;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import de.hpi.mmds.wiki.SparkUtil;
+import de.hpi.mmds.wiki.Spark;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 
 public class CategoryParser {
 
+	private static final String SPARK_CONTEXT_NAME = "MMDS Wiki";
 	private static final String INPUT_DIR = "dumps/";
 	private static final String OUTPUT_DIR = "data/raw/";
 
@@ -36,7 +37,7 @@ public class CategoryParser {
 			e.printStackTrace();
 		}
 
-		try (JavaSparkContext sc = SparkUtil.getContext()) {
+		try (JavaSparkContext sc = Spark.getContext(SPARK_CONTEXT_NAME)) {
 			JavaRDD<String> categoryLinks = sc.textFile(OUTPUT_DIR + "categorylinks.txt/part-00000");
 
 
@@ -85,7 +86,7 @@ public class CategoryParser {
 
 
 	public static void parseCategories() {
-		try (JavaSparkContext sc = SparkUtil.getContext()) {
+		try (JavaSparkContext sc = Spark.getContext(SPARK_CONTEXT_NAME)) {
 			JavaRDD<String> textFile = sc.textFile(INPUT_DIR + "enwiki-20160407-category.sql");
 			JavaRDD<String> filteredLines = textFile.filter(line -> line.startsWith("INSERT INTO"));
 			JavaRDD<String> entries = filteredLines.flatMap(Csv::readSqlLn);
@@ -99,7 +100,7 @@ public class CategoryParser {
 
 
 	private static void parseCategoryLinks() {
-		try (JavaSparkContext sc = SparkUtil.getContext()) {
+		try (JavaSparkContext sc = Spark.getContext(SPARK_CONTEXT_NAME)) {
 			JavaRDD<String> textFile = sc.textFile(INPUT_DIR + "enwiki-20160407-categorylinks.sql");
 			JavaRDD<String> filteredLines = textFile.filter(line -> line.startsWith("INSERT INTO"));
 			JavaRDD<String> entries = filteredLines.flatMap(Csv::readSqlLn);
