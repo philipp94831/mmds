@@ -9,6 +9,7 @@ public class Revision implements Serializable {
 
 	private static final long serialVersionUID = 8344153876742311682L;
 	private final long articleId;
+	// not static because of serialization and synchronization issues
 	private final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
 	private boolean minor = false;
 	private Integer textLength = 1;

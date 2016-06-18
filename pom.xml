@@ -18,6 +18,7 @@
     <scala.compat.version>2.10</scala.compat.version>
     <scala.version>${scala.compat.version}.5</scala.version>
     <spark.version>1.6.1</spark.version>
+    <hadoop.version>2.2.0</hadoop.version>
   </properties>
 
   <build>

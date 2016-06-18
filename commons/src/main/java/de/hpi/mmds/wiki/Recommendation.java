@@ -4,9 +4,6 @@ import java.io.Serializable;
 
 public class Recommendation implements Serializable, Comparable<Recommendation> {
 
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = -8187050183236621716L;
 	private final int article;
 	private final double prediction;
@@ -31,6 +28,7 @@ public class Recommendation implements Serializable, Comparable<Recommendation> 
 
 	@Override
 	public int compareTo(Recommendation o) {
-		return -Double.compare(prediction, o.prediction);
+		int comp = -Double.compare(prediction, o.prediction);
+		return comp == 0 ? Integer.compare(getArticle(), o.getArticle()) : comp;
 	}
 }

@@ -1,23 +1,22 @@
 package de.hpi.mmds.parsing.revision;
 
-import de.hpi.mmds.wiki.SparkUtil;
+import de.hpi.mmds.wiki.Spark;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.api.java.function.PairFunction;
 
 import scala.Tuple2;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -28,29 +27,14 @@ import java.util.Set;
 public class DataAggregator {
 
 	private static final String INPUT_DIR = "data/raw/";
-	private final static String OUTPUT_DIR = "../cf/data/final/";
-
-	public static void main(String[] args) {
-		try (JavaSparkContext jsc = SparkUtil.getContext()) {
-			aggregate(jsc, INPUT_DIR);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+	private final static String OUTPUT_DIR = "data/edits/";
 
 	private static void aggregate(JavaSparkContext jsc, String dir)
 			throws FileNotFoundException, IOException, ParseException {
 		File d = new File(dir);
 		Date threshold = new SimpleDateFormat("dd.MM.yyyy").parse("01.01.2012");
 		if (!d.isDirectory()) {
-			throw new IllegalArgumentException("Must pass a driectory");
+			throw new IllegalArgumentException("Must pass a directory");
 		}
 		Set<Long> bots = new HashSet<>();
 		try (BufferedReader br = new BufferedReader(new FileReader("data/users.txt"))) {
@@ -65,52 +49,12 @@ public class DataAggregator {
 		File[] files = d.listFiles();
 		for (File file : files) {
 			if (file.isFile()) {
-				JavaRDD<Revision> revisions = jsc.textFile(file.getPath()).map(new Function<String, Revision>() {
-
-					private static final long serialVersionUID = 856475920466882421L;
-
-					@Override
-					public Revision call(String v1) throws Exception {
-						String[] split = v1.split(",");
-						if (split.length != 5) {
-							throw new IllegalStateException("Edits malformed");
-						}
-						Revision revision = new Revision(Long.parseLong(split[0]));
-						revision.setUserId(Long.parseLong(split[1]));
-						revision.setTextLength(split[2].equals("null") ? 1 : Integer.parseInt(split[2]));
-						revision.setMinor(Boolean.parseBoolean(split[3]));
-						revision.setTimestamp(split[4]);
-						return revision;
-					}
-				}).filter(new Function<Revision, Boolean>() {
-
-					private static final long serialVersionUID = 260940817334437364L;
-
-					@Override
-					public Boolean call(Revision v1) throws Exception {
-						return !(bots.contains(v1.getUserId()) || v1.isMinor());
-					}
-				});
+				JavaRDD<Revision> revisions = jsc.textFile(file.getPath()).map(DataAggregator::parseRevision)
+						.filter(v1 -> !(bots.contains(v1.getUserId()) || v1.isMinor()));
 				revisions.cache();
-				JavaRDD<Revision> test = revisions.filter(new Function<Revision, Boolean>() {
-
-					private static final long serialVersionUID = 4216755090418786585L;
-
-					@Override
-					public Boolean call(Revision v1) throws Exception {
-						return v1.getTimestamp().compareTo(threshold) >= 0;
-					}
-				});
+				JavaRDD<Revision> test = revisions.filter(v1 -> v1.getTimestamp().compareTo(threshold) >= 0);
 				aggregate(OUTPUT_DIR + "test_" + file.getName(), test);
-				JavaRDD<Revision> training = revisions.filter(new Function<Revision, Boolean>() {
-
-					private static final long serialVersionUID = 4216755090418786585L;
-
-					@Override
-					public Boolean call(Revision v1) throws Exception {
-						return v1.getTimestamp().compareTo(threshold) < 0;
-					}
-				});
+				JavaRDD<Revision> training = revisions.filter(v1 -> v1.getTimestamp().compareTo(threshold) < 0);
 				aggregate(OUTPUT_DIR + "training_" + file.getName(), training);
 				revisions.unpersist();
 			}
@@ -118,43 +62,16 @@ public class DataAggregator {
 	}
 
 	private static void aggregate(String fname, JavaRDD<Revision> revisions) {
-		JavaPairRDD<Tuple2<Long, Long>, Integer> parsed = revisions
-				.mapToPair(new PairFunction<Revision, Tuple2<Long, Long>, Integer>() {
-
-					private static final long serialVersionUID = 2015595100212783648L;
-
-					@Override
-					public Tuple2<Tuple2<Long, Long>, Integer> call(Revision t) throws Exception {
-						Tuple2<Long, Long> tuple = new Tuple2<>(t.getArticleId(), t.getUserId());
-						return new Tuple2<>(tuple, t.getTextLength());
-					}
-				});
-		JavaPairRDD<Tuple2<Long, Long>, Integer> reduced = parsed
-				.reduceByKey(new Function2<Integer, Integer, Integer>() {
-
-					private static final long serialVersionUID = 7936093501541164863L;
-
-					@Override
-					public Integer call(Integer v1, Integer v2) throws Exception {
-						return v1 + v2;
-					}
-				});
-		List<String> text = reduced.map(new Function<Tuple2<Tuple2<Long, Long>, Integer>, String>() {
-
-			private static final long serialVersionUID = -6264002531208218613L;
-
-			@Override
-			public String call(Tuple2<Tuple2<Long, Long>, Integer> v1) throws Exception {
-				return v1._1._2 + "," + v1._1._1 + "," + v1._2;
-			}
-		}).collect();
+		List<String> text = revisions
+				.mapToPair(t -> new Tuple2<>(new Tuple2<>(t.getUserId(), t.getArticleId()), t.getTextLength()))
+				.reduceByKey(Integer::sum).map(v1 -> v1._1._1 + "," + v1._1._2 + "," + v1._2).collect();
 		File outf = new File(fname);
 		try {
 			outf.getParentFile().mkdirs();
 			if (outf.exists()) {
 				FileUtils.forceDelete(outf);
 			}
-			try (FileWriter out = new FileWriter(outf)) {
+			try (Writer out = new BufferedWriter(new FileWriter(outf))) {
 				for (String line : text) {
 					out.write(line + "\n");
 				}
@@ -163,5 +80,34 @@ public class DataAggregator {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
+	}
+
+	public static void main(String[] args) {
+		try (JavaSparkContext jsc = Spark.getContext(DataAggregator.class.getName(),
+				new SparkConf().setMaster("local[4]").set("spark.executor.memory", "2g"))) {
+			aggregate(jsc, INPUT_DIR);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private static Revision parseRevision(String v1) throws ParseException {
+		String[] split = v1.split(",");
+		if (split.length != 5) {
+			throw new IllegalStateException("Edits malformed");
+		}
+		Revision revision = new Revision(Long.parseLong(split[0]));
+		revision.setUserId(Long.parseLong(split[1]));
+		revision.setTextLength(split[2].equals("null") ? 1 : Integer.parseInt(split[2]));
+		revision.setMinor(Boolean.parseBoolean(split[3]));
+		revision.setTimestamp(split[4]);
+		return revision;
 	}
 }

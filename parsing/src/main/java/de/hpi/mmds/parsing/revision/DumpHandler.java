@@ -6,9 +6,11 @@ import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Stack;
+import java.util.logging.Logger;
 
-public class DumpHandler extends DefaultHandler {
+class DumpHandler extends DefaultHandler {
 
+	private static final Logger LOGGER = Logger.getLogger(DumpHandler.class.getName());
 	private final DumpWriter out;
 	private StringBuilder buf;
 	private long currentArticle;
@@ -44,12 +46,17 @@ public class DumpHandler extends DefaultHandler {
 			try {
 				currentRevision.setTimestamp(buf.toString());
 			} catch (ParseException e) {
+				LOGGER.severe("Error parsing timestamp " + buf.toString() + ": " + e.getMessage());
 				err = true;
 			}
 		}
 		if (isInRevision()) {
 			if (!err && currentRevision.getUserId() != 0 && currentNamespace == 0) {
-				out.write(currentRevision);
+				try {
+					out.write(currentRevision);
+				} catch (IOException e) {
+					LOGGER.severe("Error writing revision: " + e.getMessage());
+				}
 			}
 			currentRevision = null;
 		}
