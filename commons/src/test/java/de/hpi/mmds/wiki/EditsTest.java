@@ -22,7 +22,7 @@ public class EditsTest {
 	public static void setup() {
 		jsc = Spark.getContext(EditsTest.class.getName());
 		edits = new Edits(jsc,
-				Thread.currentThread().getContextClassLoader().getResource("training_data.txt").getPath());
+				Thread.currentThread().getContextClassLoader().getResource("sample_edits.txt").getPath());
 	}
 
 	@AfterClass
@@ -57,5 +57,16 @@ public class EditsTest {
 		assertTrue(users.contains(1));
 		assertTrue(users.contains(2));
 		assertTrue(users.contains(3));
+	}
+
+	@Test
+	public void testArticles() {
+		List<Integer> articles = edits.getArticles().collect();
+		assertEquals(5, articles.size());
+		assertTrue(articles.contains(1));
+		assertTrue(articles.contains(2));
+		assertTrue(articles.contains(3));
+		assertTrue(articles.contains(4));
+		assertTrue(articles.contains(5));
 	}
 }

@@ -19,7 +19,7 @@ public class EvaluatorTest {
 
 	public static final double DOUBLE_TOLERANCE = 1e-3;
 	private static final Recommender recommender = (userId, articles, howMany) -> Arrays
-			.asList(new Recommendation(1.0, 10), new Recommendation(1.0, 11));
+			.asList(new Recommendation(1.0, 1), new Recommendation(1.0, 2));
 	private static Edits test;
 	private static Edits training;
 	private static JavaSparkContext jsc;
@@ -51,6 +51,23 @@ public class EvaluatorTest {
 	@Test
 	public void test() {
 		Evaluator eval = new Evaluator(recommender, test, training, out);
+		Map<Integer, Result> results = eval.evaluate(3, -1);
+		assertEquals(3, results.size());
+		assertEquals(1.0, results.get(1).precision(), DOUBLE_TOLERANCE);
+		assertEquals(1.0, results.get(1).meanAveragePrecision(), DOUBLE_TOLERANCE);
+		assertEquals(1.0, results.get(1).recall(), DOUBLE_TOLERANCE);
+		assertEquals(0.5, results.get(2).precision(), DOUBLE_TOLERANCE);
+		assertEquals(1.0, results.get(2).meanAveragePrecision(), DOUBLE_TOLERANCE);
+		assertEquals(1.0 / 3, results.get(2).recall(), DOUBLE_TOLERANCE);
+		assertEquals(0.0, results.get(3).precision(), DOUBLE_TOLERANCE);
+		assertEquals(0.0, results.get(3).meanAveragePrecision(), DOUBLE_TOLERANCE);
+		assertEquals(0.0, results.get(3).recall(), DOUBLE_TOLERANCE);
+	}
+
+	@Test
+	public void testFromFile() {
+		Evaluator eval = new Evaluator(recommender, training,
+				Thread.currentThread().getContextClassLoader().getResource("ground_truth.csv").getPath(), out);
 		Map<Integer, Result> results = eval.evaluate(3, -1);
 		assertEquals(3, results.size());
 		assertEquals(1.0, results.get(1).precision(), DOUBLE_TOLERANCE);
