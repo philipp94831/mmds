@@ -1,4 +1,4 @@
-package de.hpi.mmds.sparking.articles
+package de.hpi.mmds.parsing.articles
 
 // import spark stuff
 import org.apache.spark.{SparkConf, SparkContext}
@@ -9,8 +9,9 @@ import org.apache.hadoop.io.{LongWritable, Text}
 import scala.xml.XML
 
 // import text transformation stuff
-import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel, RegexTokenizer, StopWordsRemover}
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.mllib.linalg.SparseVector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.Row
@@ -29,44 +30,13 @@ class ArticleParser(input: String, output: String) {
     sc.setLogLevel("ERROR")
     
     val rdd_input = read_files(sc, input)
-    //val (rdd_stopwords, vocabArray) = remove_stopwords(rdd_input, 10000)
+    val (rdd_stopwords, vocabArray) = remove_stopwords(rdd_input, 10000)
     
-    val sqlContext= new org.apache.spark.sql.SQLContext(sc)
-      import sqlContext.implicits._
-    
-    val df = rdd_input.toDF("id", "title", "text")
-    val tokenizer = new RegexTokenizer()
-        .setInputCol("text")
-        .setOutputCol("rawTokens")
-    val stopWordsRemover = new StopWordsRemover()
-        .setInputCol("rawTokens")
-        .setOutputCol("tokens")
-    val countVectorizer = new CountVectorizer()
-        .setVocabSize(10000)
-        .setInputCol("tokens")
-        .setOutputCol("features")
-    val pipeline = new Pipeline()
-        .setStages(Array(tokenizer, stopWordsRemover, countVectorizer))
-    val model = pipeline.fit(df)
-    
-    val rdd_stopwords = model
-        .transform(df)
-        .select("id", "title", "features")
-        .rdd
-        .map({
-            case Row(id: Int, title: String, text)
-            => (id, title, text)
-        })
-    
-    val rdd_output = rdd_stopwords.map({
-        s => (s._1.toString + ';' + s._2 + ';' + s._3)
-    })
-    
-    var vocab_string = model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.mkString(",")
+    var vocab_string = vocabArray.mkString(",")
     var vocab_array = Array(vocab_string)
     val rdd_vocab = sc.parallelize(vocab_array)
     
-    rdd_output.saveAsTextFile(output)
+    rdd_stopwords.saveAsTextFile(output)
     rdd_vocab.saveAsTextFile(output + "-vocab")
   }
   
@@ -101,39 +71,39 @@ class ArticleParser(input: String, output: String) {
     (rdd_preprocessing)
   }
   
-  //private def remove_stopwords(
-  //    rdd_before : RDD[(Int, String, String)],
-  //    vocabSize : Int)
-  //    : (RDD[(Int, String, Vector[String])], Array[String]) = {
-  //  val sqlContext= new org.apache.spark.sql.SQLContext(sc)
-  //    import sqlContext.implicits._
-  //  
-  //  val df = rdd_before.toDF("id", "title", "text")
-  //  val tokenizer = new RegexTokenizer()
-  //      .setInputCol("text")
-  //      .setOutputCol("rawTokens")
-  //  val stopWordsRemover = new StopWordsRemover()
-  //      .setInputCol("rawTokens")
-  //      .setOutputCol("tokens")
-  //  val countVectorizer = new CountVectorizer()
-  //      .setVocabSize(vocabSize)
-  //      .setInputCol("tokens")
-  //      .setOutputCol("features")
-  //  val pipeline = new Pipeline()
-  //      .setStages(Array(tokenizer, stopWordsRemover, countVectorizer))
-  //  val model = pipeline.fit(df)
-  //  
-  //  val rdd_after = model
-  //      .transform(df)
-  //      .select("id", "title", "features")
-  //      .rdd
-  //      .map({
-  //          case Row(id: Int, title: String, text: Vector[String])
-  //          => (id, title, text)
-  //      })
-  //  
-  //  (rdd_after, model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary)
-  //}
+  private def remove_stopwords(
+      rdd_before : RDD[(Int, String, String)],
+      vocabSize : Int)
+      : (RDD[(Int, String, SparseVector)], Array[String]) = {
+    val sqlContext= new org.apache.spark.sql.SQLContext(sc)
+    import sqlContext.implicits._
+    
+    val df = rdd_before.toDF("id", "title", "text")
+    val tokenizer = new RegexTokenizer()
+        .setInputCol("text")
+        .setOutputCol("rawTokens")
+    val stopWordsRemover = new StopWordsRemover()
+        .setInputCol("rawTokens")
+        .setOutputCol("tokens")
+    val countVectorizer = new CountVectorizer()
+        .setVocabSize(10000)
+        .setInputCol("tokens")
+        .setOutputCol("features")
+    val pipeline = new Pipeline()
+        .setStages(Array(tokenizer, stopWordsRemover, countVectorizer))
+    val model = pipeline.fit(df)
+    
+    val rdd_after = model
+        .transform(df)
+        .select("id", "title", "features")
+        .rdd
+        .map({
+            case Row(id: Int, title: String, text: SparseVector)
+            => (id, title, text)
+        })
+    
+    (rdd_after, model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary)
+  }
 }
 
 object ArticleParser {
