@@ -60,8 +60,6 @@ class LatentDirichletAllocation(input: String, output: String, num_topics: Int) 
     
     ldaModel.save(sc, output)
   }
-  
-  topicAssignments.saveAsTextFile
     
   def load (path: String)
   : (RDD[(Long, Vector)], Array[String]) = {
