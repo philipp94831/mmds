@@ -88,7 +88,7 @@
         <executions>
           <execution>
             <id>make-assembly</id>
-            <phase>package</phase>
+            <phase>deploy</phase>
             <goals>
               <goal>single</goal>
             </goals>
