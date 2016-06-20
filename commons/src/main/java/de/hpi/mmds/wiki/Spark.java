@@ -7,13 +7,13 @@ import scala.Tuple2;
 
 public class Spark {
 
+	private static SparkConf defaultConf(String name) {
+		return new SparkConf().setAppName(name).setMaster("local");
+	}
+
 	public static JavaSparkContext getContext(String name) {
 		SparkConf conf = defaultConf(name);
 		return new JavaSparkContext(conf);
-	}
-
-	private static SparkConf defaultConf(String name) {
-		return new SparkConf().setAppName(name).setMaster("local");
 	}
 
 	public static JavaSparkContext getContext(String name, SparkConf newConf) {

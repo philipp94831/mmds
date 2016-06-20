@@ -2,7 +2,6 @@ package de.hpi.mmds.wiki;
 
 import com.google.common.collect.Sets;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -10,9 +9,9 @@ import org.apache.spark.api.java.JavaSparkContext;
 import scala.Tuple2;
 
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,11 +27,11 @@ public class Evaluator {
 
 	private static final Logger LOGGER = Logger.getLogger(Evaluator.class.getName());
 	private final Edits training;
-	private final File out;
+	private final OutputStream out;
 	private final Recommender recommender;
 	private final JavaPairRDD<Integer, Set<Integer>> groundTruths;
 
-	public Evaluator(Recommender recommender, Edits training, String ground_truth, File out) {
+	public Evaluator(Recommender recommender, Edits training, String ground_truth, OutputStream out) {
 		this.recommender = recommender;
 		this.training = training.cache();
 		this.groundTruths = JavaSparkContext.fromSparkContext(training.getAggregatedEdits().context())
@@ -47,7 +46,7 @@ public class Evaluator {
 		this.out = out;
 	}
 
-	public Evaluator(Recommender recommender, Edits test, Edits training, File out) {
+	public Evaluator(Recommender recommender, Edits test, Edits training, OutputStream out) {
 		this.recommender = recommender;
 		this.training = training.cache();
 		JavaPairRDD<Integer, Iterable<Integer>> possibleRecommendations = test.getAllEdits().mapToPair(swap())
@@ -78,19 +77,8 @@ public class Evaluator {
 		double totalMAP = 0.0;
 		double totalRecall = 0.0;
 		double totalFmeasure = 0.0;
-		File parentFile = out.getParentFile();
-		if (parentFile != null) {
-			parentFile.mkdirs();
-		}
-		if (out.exists()) {
-			try {
-				FileUtils.forceDelete(out);
-			} catch (IOException e) {
-				throw new RuntimeException("Could not delete output file " + out.getPath(), e);
-			}
-		}
 		//LOGGER.info("Sampling " + num + " out of " + groundTruths.count() + " users");
-		try (BufferedWriter writer = new BufferedWriter(new FileWriter(out))) {
+		try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out))) {
 			for (Tuple2<Integer, Set<Integer>> t : groundTruths.takeSample(false, num, seed)) {
 				int user = t._1;
 				JavaRDD<Integer> articles = training.getEdits(user);
@@ -126,7 +114,7 @@ public class Evaluator {
 				writer.flush();
 			}
 		} catch (IOException e) {
-			throw new RuntimeException("Error writing to output file " + out.getPath(), e);
+			throw new RuntimeException("Error writing to output stream", e);
 		}
 		if (!results.isEmpty()) {
 			int median = results.size() / 2;

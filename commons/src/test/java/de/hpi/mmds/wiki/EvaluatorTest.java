@@ -10,6 +10,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -17,13 +21,14 @@ import static org.junit.Assert.assertEquals;
 
 public class EvaluatorTest {
 
-	public static final double DOUBLE_TOLERANCE = 1e-3;
+	private static final double DOUBLE_TOLERANCE = 1e-3;
 	private static final Recommender recommender = (userId, articles, howMany) -> Arrays
 			.asList(new Recommendation(1.0, 1), new Recommendation(1.0, 2));
 	private static Edits test;
 	private static Edits training;
 	private static JavaSparkContext jsc;
-	private File out;
+	private File file;
+	private OutputStream out;
 
 	@BeforeClass
 	public static void setupClass() {
@@ -39,17 +44,19 @@ public class EvaluatorTest {
 	}
 
 	@Before
-	public void setup() {
-		out = new File("out.txt");
+	public void setup() throws FileNotFoundException {
+		file = new File("out.txt");
+		out = new FileOutputStream(file);
 	}
 
 	@After
-	public void tearDown() {
-		out.delete();
+	public void tearDown() throws IOException {
+		out.close();
+		file.delete();
 	}
 
 	@Test
-	public void test() {
+	public void test() throws FileNotFoundException {
 		Evaluator eval = new Evaluator(recommender, test, training, out);
 		Map<Integer, Result> results = eval.evaluate(3, -1);
 		assertEquals(3, results.size());
@@ -65,7 +72,7 @@ public class EvaluatorTest {
 	}
 
 	@Test
-	public void testFromFile() {
+	public void testFromFile() throws FileNotFoundException {
 		Evaluator eval = new Evaluator(recommender, training,
 				Thread.currentThread().getContextClassLoader().getResource("ground_truth.csv").getPath(), out);
 		Map<Integer, Result> results = eval.evaluate(3, -1);

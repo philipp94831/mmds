@@ -38,6 +38,11 @@ public class Edits implements Serializable {
 		return edits;
 	}
 
+	public Edits cache() {
+		edits.cache();
+		return this;
+	}
+
 	public JavaPairRDD<Integer, Iterable<Integer>> getAggregatedEdits() {
 		return edits;
 	}
@@ -46,21 +51,16 @@ public class Edits implements Serializable {
 		return edits.flatMapValues(identity());
 	}
 
+	public JavaRDD<Integer> getArticles() {
+		return edits.values().flatMap(i -> i).distinct();
+	}
+
 	public JavaRDD<Integer> getEdits(int user) {
 		return edits.filter(keyFilter(user)).flatMap(t -> t._2);
 	}
 
 	public JavaRDD<Integer> getUsers() {
 		return edits.keys().distinct();
-	}
-
-	public JavaRDD<Integer> getArticles() {
-		return edits.values().flatMap(i -> i).distinct();
-	}
-
-	public Edits cache() {
-		edits.cache();
-		return this;
 	}
 
 	public Edits persist(StorageLevel level) {

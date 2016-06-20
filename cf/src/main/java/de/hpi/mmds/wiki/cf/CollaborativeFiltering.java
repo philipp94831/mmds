@@ -1,10 +1,9 @@
 package de.hpi.mmds.wiki.cf;
 
-import de.hpi.mmds.wiki.HDFS;
+import de.hpi.mmds.wiki.FileSystem;
 import de.hpi.mmds.wiki.Recommendation;
 import de.hpi.mmds.wiki.Recommender;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.mllib.recommendation.ALS;
@@ -37,17 +36,17 @@ public class CollaborativeFiltering implements Serializable, Recommender {
 		this.model = model;
 	}
 
-	public static CollaborativeFiltering load(JavaSparkContext jsc, String filterDir, HDFS fs) {
+	public static CollaborativeFiltering load(JavaSparkContext jsc, String filterDir, FileSystem fs) {
 		final int rank;
-		try (BufferedReader in = fs.read(new Path(filterDir + META_PATH))) {
+		try (BufferedReader in = fs.read(filterDir + META_PATH)) {
 			rank = Integer.parseInt(in.readLine());
 		} catch (Exception e) {
 			throw new RuntimeException("Error reading metadata", e);
 		}
 		final JavaRDD<Tuple2<Object, double[]>> userFeatures = jsc.<Tuple2<Object, double[]>>objectFile(
-				filterDir + USER_PATH).cache();
+				fs.makeQualified(filterDir + USER_PATH).toString()).cache();
 		final JavaRDD<Tuple2<Object, double[]>> productFeatures = jsc.<Tuple2<Object, double[]>>objectFile(
-				filterDir + PRODUCT_PATH).cache();
+				fs.makeQualified(filterDir + PRODUCT_PATH).toString()).cache();
 		MatrixFactorizationModel model = new MatrixFactorizationModel(rank, userFeatures.rdd(), productFeatures.rdd());
 		return new CollaborativeFiltering(model);
 	}
@@ -83,14 +82,14 @@ public class CollaborativeFiltering implements Serializable, Recommender {
 		return Collections.emptyList();
 	}
 
-	public CollaborativeFiltering save(String filterDir, HDFS fs) throws IOException {
-		fs.delete(new Path(filterDir));
-		try (BufferedWriter out = fs.create(new Path(filterDir + META_PATH))) {
+	public CollaborativeFiltering save(String filterDir, FileSystem fs) throws IOException {
+		fs.delete(filterDir);
+		try (BufferedWriter out = fs.create(filterDir + META_PATH)) {
 			out.write(Integer.toString(model.rank()));
 			out.newLine();
 		}
-		model.userFeatures().saveAsObjectFile(filterDir + USER_PATH);
-		model.productFeatures().saveAsObjectFile(filterDir + PRODUCT_PATH);
+		model.userFeatures().saveAsObjectFile(fs.makeQualified(filterDir + USER_PATH).toString());
+		model.productFeatures().saveAsObjectFile(fs.makeQualified(filterDir + PRODUCT_PATH).toString());
 		return this;
 	}
 }
