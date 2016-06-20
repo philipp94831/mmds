@@ -110,7 +110,7 @@ public class FileSystemTest {
 	@Test
 	public void testLocal() throws IOException {
 		try (FileSystem fs = FileSystem.getLocal()) {
-			assertEquals("file:/" + System.getProperty("user.dir").replace("\\", "/") + "/foo/bar",
+			assertEquals("file:/" + System.getProperty("user.dir").replace("\\", "/").replaceAll("^/", "") + "/foo/bar",
 					fs.makeQualified("foo/bar").toString());
 			readWriteFile(fs);
 			readWriteQualifiedFile(fs);
