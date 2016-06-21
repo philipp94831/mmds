@@ -18,6 +18,8 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class EvaluatorTest {
 
@@ -32,7 +34,7 @@ public class EvaluatorTest {
 
 	@BeforeClass
 	public static void setupClass() {
-		jsc = Spark.getContext(EvaluatorTest.class.getName());
+		jsc = Spark.newApp(EvaluatorTest.class.getName()).context();
 		test = new Edits(jsc, Thread.currentThread().getContextClassLoader().getResource("test_data.txt").getPath());
 		training = new Edits(jsc,
 				Thread.currentThread().getContextClassLoader().getResource("training_data.txt").getPath());
@@ -69,6 +71,21 @@ public class EvaluatorTest {
 		assertEquals(0.0, results.get(3).precision(), DOUBLE_TOLERANCE);
 		assertEquals(0.0, results.get(3).meanAveragePrecision(), DOUBLE_TOLERANCE);
 		assertEquals(0.0, results.get(3).recall(), DOUBLE_TOLERANCE);
+	}
+
+	@Test
+	public void testMalformedGroundTruth() {
+		try {
+			Evaluator eval = new Evaluator(recommender, training,
+					Thread.currentThread().getContextClassLoader().getResource("malformed_ground_truth.csv").getPath(),
+					out);
+			assertTrue("Exception not thrown yet", true);
+			eval.evaluate(3, -1);
+			fail("Expected IllegalStateException");
+		} catch (Exception e) {
+			assertTrue(e.getCause() instanceof IllegalStateException);
+			assertEquals(e.getCause().getMessage(), "Data malformed");
+		}
 	}
 
 	@Test

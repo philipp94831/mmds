@@ -20,7 +20,7 @@ public class EditsTest {
 
 	@BeforeClass
 	public static void setup() {
-		jsc = Spark.getContext(EditsTest.class.getName());
+		jsc = Spark.newApp(EditsTest.class.getName()).context();
 		edits = new Edits(jsc,
 				Thread.currentThread().getContextClassLoader().getResource("sample_edits.txt").getPath());
 	}

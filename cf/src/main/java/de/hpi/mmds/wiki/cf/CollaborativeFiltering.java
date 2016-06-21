@@ -15,14 +15,13 @@ import scala.Tuple2;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
-public class CollaborativeFiltering implements Serializable, Recommender {
+public class CollaborativeFiltering implements Recommender {
 
 	private static final String PRODUCT_PATH = "/product";
 	private static final String USER_PATH = "/user";

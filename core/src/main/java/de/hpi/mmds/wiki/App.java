@@ -20,7 +20,7 @@ public class App {
 	private static final String OUT_FILE = null;
 
 	public static void main(String[] args) {
-		try (JavaSparkContext jsc = Spark.getContext("MMDS Wiki"); FileSystem fs = FileSystem.getLocal()) {
+		try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").context(); FileSystem fs = FileSystem.getLocal()) {
 			Edits training = new Edits(jsc, TRAINING_DIR);
 			MultiRecommender recommender = new MultiRecommender().add(CollaborativeFiltering.load(jsc, CF_DIR, fs))
 					.add(CategoryAnalyzer.load(jsc, CAT_DIR)).add(new LDA());
