@@ -66,7 +66,9 @@ class ArticleParser(input: String, output: String) {
       .filter(s => !s._4.startsWith("#REDIRECT"))
       .map({ s =>
           val replaced = s._4.replaceAll("\\W", " ")
-        (s._1, s._3, replaced)
+          val tknzed = replaced.split("\\W").filter(_.size > 3)
+          val trimmed = tknzed.mkString(" ")
+        (s._1, s._3, trimmed)
       })
     (rdd_preprocessing)
   }
