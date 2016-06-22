@@ -76,7 +76,7 @@ class ArticleParser(input: String, output: String) {
   private def remove_stopwords(
       rdd_before : RDD[(Int, String, String)],
       vocabSize : Int)
-      : (RDD[(Int, String, SparseVector)], Array[String]) = {
+      : (RDD[(String)], Array[String]) = {
     val sqlContext= new org.apache.spark.sql.SQLContext(sc)
     import sqlContext.implicits._
     
@@ -101,7 +101,7 @@ class ArticleParser(input: String, output: String) {
         .rdd
         .map({
             case Row(id: Int, title: String, text: SparseVector)
-            => (id, title, text)
+            => (id + ';' + title + ';' + text)
         })
     
     (rdd_after, model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary)
