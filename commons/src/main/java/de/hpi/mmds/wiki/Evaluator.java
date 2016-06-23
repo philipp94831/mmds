@@ -31,11 +31,11 @@ public class Evaluator {
 	private final Recommender recommender;
 	private final JavaPairRDD<Integer, Set<Integer>> groundTruths;
 
-	public Evaluator(Recommender recommender, Edits training, String ground_truth, OutputStream out) {
+	public Evaluator(Recommender recommender, Edits training, String ground_truth, OutputStream out, FileSystem fs) {
 		this.recommender = recommender;
 		this.training = training.cache();
 		this.groundTruths = JavaSparkContext.fromSparkContext(training.getAggregatedEdits().context())
-				.textFile(ground_truth).mapToPair(Evaluator::parseGroundTruth).mapValues(i -> {
+				.textFile(fs.makeQualified(ground_truth).toString()).mapToPair(Evaluator::parseGroundTruth).mapValues(i -> {
 					Set<Integer> s = new HashSet<>();
 					s.add(i);
 					return s;

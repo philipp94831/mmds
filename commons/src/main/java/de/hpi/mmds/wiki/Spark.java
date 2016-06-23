@@ -5,7 +5,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 
 public class Spark {
 
-	private SparkConf conf = new SparkConf().setMaster("local");
+	private SparkConf conf = new SparkConf();
 
 	public Spark(String name) {
 		conf.setAppName(name);
@@ -16,6 +16,7 @@ public class Spark {
 	}
 
 	public JavaSparkContext context() {
+		setMaster("local");
 		return new JavaSparkContext(conf);
 	}
 
@@ -29,7 +30,7 @@ public class Spark {
 	}
 
 	public Spark setMaster(String master) {
-		conf.setMaster(master);
+		conf.setIfMissing("spark.master", master);
 		return this;
 	}
 

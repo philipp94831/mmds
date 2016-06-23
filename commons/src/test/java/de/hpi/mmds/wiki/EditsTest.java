@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import scala.Tuple2;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -19,10 +20,12 @@ public class EditsTest {
 	private static JavaSparkContext jsc;
 
 	@BeforeClass
-	public static void setup() {
+	public static void setup() throws IOException {
 		jsc = Spark.newApp(EditsTest.class.getName()).context();
-		edits = new Edits(jsc,
-				Thread.currentThread().getContextClassLoader().getResource("sample_edits.txt").getPath());
+		try (FileSystem fs = FileSystem.getLocal()) {
+			edits = new Edits(jsc,
+					Thread.currentThread().getContextClassLoader().getResource("sample_edits.txt").getPath(), fs);
+		}
 	}
 
 	@AfterClass

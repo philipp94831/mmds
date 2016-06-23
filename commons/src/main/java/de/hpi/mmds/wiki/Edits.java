@@ -3,7 +3,6 @@ package de.hpi.mmds.wiki;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.storage.StorageLevel;
 
 import scala.Tuple2;
@@ -18,24 +17,13 @@ public class Edits implements Serializable {
 	private static final long serialVersionUID = 1668840974181477332L;
 	private final JavaPairRDD<Integer, Iterable<Integer>> edits;
 
-	public Edits(JavaSparkContext jsc, String dataDir) {
-		edits = parseEdits(jsc, dataDir);
+	public Edits(JavaSparkContext jsc, String dataDir, FileSystem fs) {
+		edits = jsc.textFile(fs.makeQualified(dataDir).toString()).mapToPair(Edits::parseEdits).groupByKey();
 	}
 
-	private static JavaPairRDD<Integer, Iterable<Integer>> parseEdits(JavaSparkContext jsc, String dataDir) {
-		JavaRDD<String> data = jsc.textFile(dataDir);
-		JavaPairRDD<Integer, Iterable<Integer>> edits = data.mapToPair(new PairFunction<String, Integer, Integer>() {
-
-			private static final long serialVersionUID = -4781040078296911266L;
-
-			@Override
-			public Tuple2<Integer, Integer> call(String s) throws Exception {
-				String[] sarray = s.split(",");
-				return new Tuple2<>(Integer.parseInt(sarray[0]), Integer.parseInt(sarray[1]));
-			}
-		}).groupByKey();
-		jsc.sc().log().info("Edit data loaded");
-		return edits;
+	private static Tuple2<Integer, Integer> parseEdits(String s) {
+		String[] sarray = s.split(",");
+		return new Tuple2<>(Integer.parseInt(sarray[0]), Integer.parseInt(sarray[1]));
 	}
 
 	public Edits cache() {

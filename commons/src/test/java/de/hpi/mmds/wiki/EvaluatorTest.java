@@ -33,11 +33,14 @@ public class EvaluatorTest {
 	private OutputStream out;
 
 	@BeforeClass
-	public static void setupClass() {
+	public static void setupClass() throws IOException {
 		jsc = Spark.newApp(EvaluatorTest.class.getName()).context();
-		test = new Edits(jsc, Thread.currentThread().getContextClassLoader().getResource("test_data.txt").getPath());
-		training = new Edits(jsc,
-				Thread.currentThread().getContextClassLoader().getResource("training_data.txt").getPath());
+		try (FileSystem fs = FileSystem.getLocal()) {
+			test = new Edits(jsc, Thread.currentThread().getContextClassLoader().getResource("test_data.txt").getPath(),
+					fs);
+			training = new Edits(jsc,
+					Thread.currentThread().getContextClassLoader().getResource("training_data.txt").getPath(), fs);
+		}
 	}
 
 	@AfterClass
@@ -75,10 +78,10 @@ public class EvaluatorTest {
 
 	@Test
 	public void testMalformedGroundTruth() {
-		try {
+		try(FileSystem fs = FileSystem.getLocal()) {
 			Evaluator eval = new Evaluator(recommender, training,
 					Thread.currentThread().getContextClassLoader().getResource("malformed_ground_truth.csv").getPath(),
-					out);
+					out, fs);
 			assertTrue("Exception not thrown yet", true);
 			eval.evaluate(3, -1);
 			fail("Expected IllegalStateException");
@@ -89,20 +92,22 @@ public class EvaluatorTest {
 	}
 
 	@Test
-	public void testFromFile() throws FileNotFoundException {
-		Evaluator eval = new Evaluator(recommender, training,
-				Thread.currentThread().getContextClassLoader().getResource("ground_truth.csv").getPath(), out);
-		Map<Integer, Result> results = eval.evaluate(3, -1);
-		assertEquals(3, results.size());
-		assertEquals(1.0, results.get(1).precision(), DOUBLE_TOLERANCE);
-		assertEquals(1.0, results.get(1).meanAveragePrecision(), DOUBLE_TOLERANCE);
-		assertEquals(1.0, results.get(1).recall(), DOUBLE_TOLERANCE);
-		assertEquals(0.5, results.get(2).precision(), DOUBLE_TOLERANCE);
-		assertEquals(1.0, results.get(2).meanAveragePrecision(), DOUBLE_TOLERANCE);
-		assertEquals(1.0 / 3, results.get(2).recall(), DOUBLE_TOLERANCE);
-		assertEquals(0.0, results.get(3).precision(), DOUBLE_TOLERANCE);
-		assertEquals(0.0, results.get(3).meanAveragePrecision(), DOUBLE_TOLERANCE);
-		assertEquals(0.0, results.get(3).recall(), DOUBLE_TOLERANCE);
+	public void testFromFile() throws IOException {
+		try(FileSystem fs = FileSystem.getLocal()) {
+			Evaluator eval = new Evaluator(recommender, training,
+					Thread.currentThread().getContextClassLoader().getResource("ground_truth.csv").getPath(), out, fs);
+			Map<Integer, Result> results = eval.evaluate(3, -1);
+			assertEquals(3, results.size());
+			assertEquals(1.0, results.get(1).precision(), DOUBLE_TOLERANCE);
+			assertEquals(1.0, results.get(1).meanAveragePrecision(), DOUBLE_TOLERANCE);
+			assertEquals(1.0, results.get(1).recall(), DOUBLE_TOLERANCE);
+			assertEquals(0.5, results.get(2).precision(), DOUBLE_TOLERANCE);
+			assertEquals(1.0, results.get(2).meanAveragePrecision(), DOUBLE_TOLERANCE);
+			assertEquals(1.0 / 3, results.get(2).recall(), DOUBLE_TOLERANCE);
+			assertEquals(0.0, results.get(3).precision(), DOUBLE_TOLERANCE);
+			assertEquals(0.0, results.get(3).meanAveragePrecision(), DOUBLE_TOLERANCE);
+			assertEquals(0.0, results.get(3).recall(), DOUBLE_TOLERANCE);
+		}
 	}
 
 }

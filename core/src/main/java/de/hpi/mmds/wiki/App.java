@@ -21,7 +21,7 @@ public class App {
 
 	public static void main(String[] args) {
 		try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").context(); FileSystem fs = FileSystem.getLocal()) {
-			Edits training = new Edits(jsc, TRAINING_DIR);
+			Edits training = new Edits(jsc, TRAINING_DIR, fs);
 			MultiRecommender recommender = new MultiRecommender().add(CollaborativeFiltering.load(jsc, CF_DIR, fs))
 					.add(CategoryAnalyzer.load(jsc, CAT_DIR)).add(new LDA());
 			File file = new File(OUT_FILE);
@@ -37,7 +37,7 @@ public class App {
 				}
 			}
 			try (FileOutputStream out = new FileOutputStream(file)) {
-				Evaluator eval = new Evaluator(recommender, training, GROUND_TRUTH, out);
+				Evaluator eval = new Evaluator(recommender, training, GROUND_TRUTH, out, fs);
 				eval.evaluate(200, 100);
 			}
 		} catch (IOException e) {
