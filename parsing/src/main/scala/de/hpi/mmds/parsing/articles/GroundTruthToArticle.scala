@@ -33,7 +33,7 @@ class GroundTruthToArticles(ground_truth: String, articles: String, output: Stri
     })
     
     // Debug output
-    println("# of articles: " + articles_rdd.count)
+    println("# of articles: " + join.count)
     
     join.saveAsTextFile(output)
   }
