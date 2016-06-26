@@ -36,6 +36,9 @@ class ArticleParser(input: String, output: String) {
     var vocab_array = Array(vocab_string)
     val rdd_vocab = sc.parallelize(vocab_array)
     
+    // Debug output
+    println("# of articles: " + rdd_stopwords.count)
+    
     rdd_stopwords.saveAsTextFile(output)
     rdd_vocab.saveAsTextFile(output + "-vocab")
   }
@@ -70,6 +73,7 @@ class ArticleParser(input: String, output: String) {
           val trimmed = tknzed.mkString(" ")
         (s._1, s._3, trimmed)
       })
+      
     (rdd_preprocessing)
   }
   
@@ -101,7 +105,7 @@ class ArticleParser(input: String, output: String) {
         .rdd
         .map({
             case Row(id: Int, title: String, text: SparseVector)
-            => (id + ';' + title + ';' + text)
+            => (id.toString + ';' + title + ';' + text)
         })
     
     (rdd_after, model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary)
