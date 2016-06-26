@@ -29,17 +29,14 @@ class LatentDirichletAllocation(input: String, output: String, num_topics: Int) 
         .setOptimizer("em")
     
     val ldaModel = lda.run(documents).asInstanceOf[DistributedLDAModel]
-    val avgLogLikelihood = ldaModel.logLikelihood / documents.count()
     
-    // Print topics, showing top-weighted 10 terms for each topic.
+    // Debug output
     val topicIndices = ldaModel.describeTopics(maxTermsPerTopic = 3)
     val topics = topicIndices.map({case (terms, termWeights) =>
         terms.zip(termWeights).map ({ case (term, weight) =>
           (vocab(term.toInt), weight)
         })
     })
-    
-    // Debug output
     topics.zipWithIndex.foreach { case (topic, i) =>
         println(s"TOPIC $i")
         topic.foreach { case (term, weight) =>
@@ -47,8 +44,6 @@ class LatentDirichletAllocation(input: String, output: String, num_topics: Int) 
         }
         println()
     }
-      
-    // Print assignments - find out how to map ID to file
     val topicAssignments = ldaModel.topDocumentsPerTopic(maxDocumentsPerTopic = 3)
     topicAssignments.foreach { case (docs, docWeights) =>
       println("ASSIGNMENTS:")
@@ -66,10 +61,9 @@ class LatentDirichletAllocation(input: String, output: String, num_topics: Int) 
     val input = sc.textFile(path)
     val output = input.map({ s =>
         val elements = s.split(';')
-        (elements(0).toLong, Vectors.parse(elements(2)))
+        (elements(0).toLong, Vectors.parse(elements(elements.size - 1)))
     })
-    //val vocab_rdd = sc.textFile(path + "-vocab")
-    val vocab_rdd = sc.textFile("C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/articles-vocab")
+    val vocab_rdd = sc.textFile(path + "-vocab")
     val vocab = vocab_rdd.first().split("\\W+")
     (output, vocab)
   }
