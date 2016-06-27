@@ -26,8 +26,7 @@ class GroundTruthToArticles(ground_truth: String, articles: String, output: Stri
     val (articles_rdd, vocabArray) = load(articles)
     
     // join
-    val join = articles_rdd.join(ground_truth_rdd)
-    join.map({
+    val join = articles_rdd.join(ground_truth_rdd).map({
         case Row(id: Int, text: SparseVector)
         => (id.toString + ';' + text)
     })
