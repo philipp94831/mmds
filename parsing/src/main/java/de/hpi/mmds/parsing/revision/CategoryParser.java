@@ -1,14 +1,18 @@
 package de.hpi.mmds.parsing.revision;
 
+import de.hpi.mmds.wiki.Spark;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import de.hpi.mmds.wiki.Spark;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Stream;
 
 public class CategoryParser {
@@ -37,9 +41,8 @@ public class CategoryParser {
 			e.printStackTrace();
 		}
 
-		try (JavaSparkContext sc = Spark.getContext(SPARK_CONTEXT_NAME)) {
+		try (JavaSparkContext sc = Spark.newApp(SPARK_CONTEXT_NAME).context()) {
 			JavaRDD<String> categoryLinks = sc.textFile(OUTPUT_DIR + "categorylinks.txt/part-00000");
-
 
 			//
 			// Pages
@@ -59,7 +62,6 @@ public class CategoryParser {
 				return Csv.writeLn(Arrays.asList(entry.get(0), categories.get(entry.get(1)).toString()));
 			});
 			writeOutput(resolvedPages, OUTPUT_DIR + "resolved_pages.txt");
-
 
 			//
 			// Subcats
@@ -84,9 +86,8 @@ public class CategoryParser {
 		}
 	}
 
-
 	public static void parseCategories() {
-		try (JavaSparkContext sc = Spark.getContext(SPARK_CONTEXT_NAME)) {
+		try (JavaSparkContext sc = Spark.newApp(SPARK_CONTEXT_NAME).context()) {
 			JavaRDD<String> textFile = sc.textFile(INPUT_DIR + "enwiki-20160407-category.sql");
 			JavaRDD<String> filteredLines = textFile.filter(line -> line.startsWith("INSERT INTO"));
 			JavaRDD<String> entries = filteredLines.flatMap(Csv::readSqlLn);
@@ -98,9 +99,8 @@ public class CategoryParser {
 		}
 	}
 
-
 	private static void parseCategoryLinks() {
-		try (JavaSparkContext sc = Spark.getContext(SPARK_CONTEXT_NAME)) {
+		try (JavaSparkContext sc = Spark.newApp(SPARK_CONTEXT_NAME).context()) {
 			JavaRDD<String> textFile = sc.textFile(INPUT_DIR + "enwiki-20160407-categorylinks.sql");
 			JavaRDD<String> filteredLines = textFile.filter(line -> line.startsWith("INSERT INTO"));
 			JavaRDD<String> entries = filteredLines.flatMap(Csv::readSqlLn);
@@ -111,7 +111,6 @@ public class CategoryParser {
 			// nothing to do
 		}
 	}
-
 
 	private static void writeOutput(JavaRDD<String> data, String outFile) throws IOException {
 		File output = new File(outFile);

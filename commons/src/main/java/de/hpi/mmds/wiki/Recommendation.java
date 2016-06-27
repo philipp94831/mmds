@@ -13,6 +13,12 @@ public class Recommendation implements Serializable, Comparable<Recommendation> 
 		this.article = article;
 	}
 
+	@Override
+	public int compareTo(Recommendation o) {
+		int comp = -Double.compare(prediction, o.prediction);
+		return comp == 0 ? Integer.compare(getArticle(), o.getArticle()) : comp;
+	}
+
 	public int getArticle() {
 		return article;
 	}
@@ -24,11 +30,5 @@ public class Recommendation implements Serializable, Comparable<Recommendation> 
 	@Override
 	public String toString() {
 		return article + ": " + prediction;
-	}
-
-	@Override
-	public int compareTo(Recommendation o) {
-		int comp = -Double.compare(prediction, o.prediction);
-		return comp == 0 ? Integer.compare(getArticle(), o.getArticle()) : comp;
 	}
 }

@@ -18,7 +18,7 @@ public class MultiRecommenderTest {
 
 	@BeforeClass
 	public static void setup() {
-		jsc = Spark.getContext(MultiRecommenderTest.class.getName());
+		jsc = Spark.newApp(MultiRecommenderTest.class.getName()).context();
 	}
 
 	@AfterClass
@@ -65,7 +65,8 @@ public class MultiRecommenderTest {
 	@Test
 	public void testDefaultWeight() {
 		MultiRecommender recommender = new MultiRecommender();
-		recommender.add((userId, articles, howMany) -> Arrays.asList(new Recommendation(1.0, 1), new Recommendation(0.5, 2)))
+		recommender.add((userId, articles, howMany) -> Arrays
+				.asList(new Recommendation(1.0, 1), new Recommendation(0.5, 2)))
 				.add((userId, articles, howMany) -> Arrays
 						.asList(new Recommendation(2.0, 1), new Recommendation(0.5, 3)));
 		List<Recommendation> recommendations = recommender.recommend(-1, jsc.emptyRDD(), 10);

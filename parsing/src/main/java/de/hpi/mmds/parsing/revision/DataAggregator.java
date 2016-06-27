@@ -3,7 +3,6 @@ package de.hpi.mmds.parsing.revision;
 import de.hpi.mmds.wiki.Spark;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
@@ -83,8 +82,8 @@ public class DataAggregator {
 	}
 
 	public static void main(String[] args) {
-		try (JavaSparkContext jsc = Spark.getContext(DataAggregator.class.getName(),
-				new SparkConf().setMaster("local[4]").set("spark.executor.memory", "2g"))) {
+		try (JavaSparkContext jsc = Spark.newApp(DataAggregator.class.getName()).setMaster("local[4]")
+				.setWorkerMemory("2g").context()) {
 			aggregate(jsc, INPUT_DIR);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block

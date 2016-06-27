@@ -23,7 +23,7 @@ public class TransitiveClosureTest {
 
 	@BeforeClass
 	public static void setupClass() {
-		jsc = Spark.getContext(TransitiveClosureTest.class.getName());
+		jsc = Spark.newApp(TransitiveClosureTest.class.getName()).context();
 	}
 
 	@AfterClass

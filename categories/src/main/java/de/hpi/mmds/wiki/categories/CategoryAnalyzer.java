@@ -1,6 +1,6 @@
 package de.hpi.mmds.wiki.categories;
 
-import de.hpi.mmds.wiki.HDFS;
+import de.hpi.mmds.wiki.FileSystem;
 import de.hpi.mmds.wiki.Recommendation;
 import de.hpi.mmds.wiki.Recommender;
 import de.hpi.mmds.wiki.spark.TransitiveClosure;
@@ -80,7 +80,7 @@ public class CategoryAnalyzer implements Recommender {
 				.mapToPair(o -> new Tuple2<>(-1, Collections.emptySet()));
 	}
 
-	public CategoryAnalyzer save(String saveLocation, HDFS fs) throws IOException {
+	public CategoryAnalyzer save(String saveLocation, FileSystem fs) throws IOException {
 		fs.delete(new Path(saveLocation));
 		similarities.saveAsObjectFile(saveLocation);
 		return this;

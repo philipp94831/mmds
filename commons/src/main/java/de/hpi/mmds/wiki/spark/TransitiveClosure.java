@@ -20,7 +20,7 @@ public class TransitiveClosure {
 			JavaPairRDD<T, T> newEdges = tc.join(reversed).mapToPair(t -> new Tuple2<>(t._2._2, t._2._1));
 			tc = tc.union(newEdges).distinct().cache();
 			nextCount = tc.count();
-		} while(nextCount !=  oldCount);
+		} while (nextCount != oldCount);
 		return tc.map(identity());
 	}
 

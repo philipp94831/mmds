@@ -3,24 +3,38 @@ package de.hpi.mmds.wiki;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 
-import scala.Tuple2;
-
 public class Spark {
 
-	public static JavaSparkContext getContext(String name) {
-		SparkConf conf = defaultConf(name);
+	private SparkConf conf = new SparkConf();
+
+	public Spark(String name) {
+		conf.setAppName(name);
+	}
+
+	public static Spark newApp(String name) {
+		return new Spark(name);
+	}
+
+	public JavaSparkContext context() {
+		setMaster("local");
 		return new JavaSparkContext(conf);
 	}
 
-	private static SparkConf defaultConf(String name) {
-		return new SparkConf().setAppName(name).setMaster("local");
+	public SparkConf getConf() {
+		return conf;
 	}
 
-	public static JavaSparkContext getContext(String name, SparkConf newConf) {
-		SparkConf conf = defaultConf(name);
-		for (Tuple2<String, String> t : newConf.getAll()) {
-			conf.set(t._1, t._2);
-		}
-		return new JavaSparkContext(conf);
+	public Spark set(String key, String value) {
+		conf.set(key, value);
+		return this;
+	}
+
+	public Spark setMaster(String master) {
+		conf.setIfMissing("spark.master", master);
+		return this;
+	}
+
+	public Spark setWorkerMemory(String memory) {
+		return set("spark.executor.memory", memory);
 	}
 }
