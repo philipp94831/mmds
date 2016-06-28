@@ -77,8 +77,10 @@ public class Evaluator {
 		double totalMAP = 0.0;
 		double totalRecall = 0.0;
 		double totalFmeasure = 0.0;
+		long time;
 		//LOGGER.info("Sampling " + num + " out of " + groundTruths.count() + " users");
 		try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out))) {
+			long start = System.nanoTime();
 			for (Tuple2<Integer, Set<Integer>> t : groundTruths.takeSample(false, num, seed)) {
 				int user = t._1;
 				JavaRDD<Integer> articles = training.getEdits(user);
@@ -111,11 +113,15 @@ public class Evaluator {
 				writer.write("Processed: " + i + "\n");
 				writer.write("---");
 				writer.newLine();
-				writer.flush();
+//				writer.flush();
 			}
+			time = (System.nanoTime() - start) / 1_000_000;
+			writer.newLine();
+			writer.write("Evaluation took " + time + "ms");
 		} catch (IOException e) {
 			throw new RuntimeException("Error writing to output stream", e);
 		}
+		LOGGER.info("Evaluation took " + time + "ms");
 		if (!results.isEmpty()) {
 			int median = results.size() / 2;
 			LOGGER.info("AVG Precision: " + results.values().stream().mapToDouble(Result::precision).average()
