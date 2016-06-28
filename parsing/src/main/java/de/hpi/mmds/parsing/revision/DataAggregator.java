@@ -20,7 +20,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Set;
 
 public class DataAggregator {
@@ -61,9 +61,10 @@ public class DataAggregator {
 	}
 
 	private static void aggregate(String fname, JavaRDD<Revision> revisions) {
-		List<String> text = revisions
-				.mapToPair(t -> new Tuple2<>(new Tuple2<>(t.getUserId(), t.getArticleId()), t.getTextLength()))
-				.reduceByKey(Integer::sum).map(v1 -> v1._1._1 + "," + v1._1._2 + "," + v1._2).collect();
+		Iterator<String> text = revisions.mapToPair(
+				t -> new Tuple2<>(new Tuple2<>(t.getUserId(), t.getArticleId()), new Tuple2<>(1, t.getTextLength())))
+				.reduceByKey((t1, t2) -> new Tuple2<>(t1._1 + t2._1, t1._2 + t2._2))
+				.map(v1 -> v1._1._1 + "," + v1._1._2 + "," + v1._2._1 + "," +  v1._2._2).toLocalIterator();
 		File outf = new File(fname);
 		try {
 			outf.getParentFile().mkdirs();
@@ -71,8 +72,8 @@ public class DataAggregator {
 				FileUtils.forceDelete(outf);
 			}
 			try (Writer out = new BufferedWriter(new FileWriter(outf))) {
-				for (String line : text) {
-					out.write(line + "\n");
+				while (text.hasNext()) {
+					out.write(text.next() + "\n");
 				}
 			}
 		} catch (IOException e1) {
