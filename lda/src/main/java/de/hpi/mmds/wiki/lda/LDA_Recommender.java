@@ -65,6 +65,10 @@ public class LDA_Recommender implements Serializable, Recommender {
 		return new LDA_Recommender(DistributedLDAModel.load(sc, fs.makeQualified(path).toString()));
 	}
 
+	public static LDA_Recommender load(SparkContext sc, String path) {
+		return new LDA_Recommender(DistributedLDAModel.load(sc, path));
+	}
+
 	public static LDA_Recommender load(JavaSparkContext jsc, String path, FileSystem fs) {
 		return load(jsc.sc(), path, fs);
 	}
