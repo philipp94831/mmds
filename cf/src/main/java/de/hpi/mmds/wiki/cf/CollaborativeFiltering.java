@@ -57,8 +57,8 @@ public class CollaborativeFiltering implements Recommender {
 	}
 
 	public static CollaborativeFiltering train(JavaSparkContext jsc, String path, int rank, int iterations,
-			double lambda, double alpha) {
-		JavaRDD<Rating> ratings = jsc.textFile(path).map(CollaborativeFiltering::parseRating);
+			double lambda, double alpha, FileSystem fs) {
+		JavaRDD<Rating> ratings = jsc.textFile(fs.makeQualified(path).toString()).map(CollaborativeFiltering::parseRating);
 		// ratings.cache();
 		MatrixFactorizationModel model = ALS.trainImplicit(ratings.rdd(), rank, iterations, lambda, alpha);
 		ratings.unpersist();
