@@ -2,7 +2,7 @@ package de.hpi.mmds.wiki;
 
 import de.hpi.mmds.wiki.categories.CategoryAnalyzer;
 import de.hpi.mmds.wiki.cf.CollaborativeFiltering;
-import de.hpi.mmds.wiki.lda.LDA;
+import de.hpi.mmds.wiki.lda.LDA_Recommender;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -15,6 +15,7 @@ public class App {
 
 	private static final String CF_DIR = null;
 	private static final String CAT_DIR = null;
+	private static final String LDA_DIR = null;
 	private static final String GROUND_TRUTH = null;
 	private static final String TRAINING_DIR = null;
 	private static final String OUT_FILE = null;
@@ -23,7 +24,7 @@ public class App {
 		try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").context(); FileSystem fs = FileSystem.getLocal()) {
 			Edits training = new Edits(jsc, TRAINING_DIR, fs);
 			MultiRecommender recommender = new MultiRecommender().add(CollaborativeFiltering.load(jsc, CF_DIR, fs))
-					.add(CategoryAnalyzer.load(jsc, CAT_DIR)).add(new LDA());
+					.add(CategoryAnalyzer.load(jsc, CAT_DIR)).add(LDA_Recommender.load(jsc.sc(), LDA_DIR));
 			File file = new File(OUT_FILE);
 			File parentFile = file.getParentFile();
 			if (parentFile != null) {
@@ -38,7 +39,7 @@ public class App {
 			}
 			try (FileOutputStream out = new FileOutputStream(file)) {
 				Evaluator eval = new Evaluator(recommender, training, GROUND_TRUTH, out, fs);
-				eval.evaluate(200, 100);
+				eval.evaluate(200, 100, 1L);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
