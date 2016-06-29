@@ -2,18 +2,20 @@ package de.hpi.mmds.parsing.articles
 
 // import spark stuff
 import org.apache.spark.{SparkConf, SparkContext}
+import org.jsoup.Jsoup
+import org.tartarus.snowball.ext.englishStemmer
 
 // import xml stuff
 import com.databricks.spark.xml.XmlInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
+
 import scala.xml.XML
 
 // import text transformation stuff
-import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel, RegexTokenizer, StopWordsRemover}
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel, RegexTokenizer, StopWordsRemover}
 import org.apache.spark.mllib.linalg.SparseVector
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.Row
 
 class ArticleParser(input: String, output: String) {
@@ -24,34 +26,34 @@ class ArticleParser(input: String, output: String) {
     conf.setAppName(s"lda ($input) ($output)")
     new SparkContext(conf)
   }
-  
+
   def run() = {
     // DEBUG
     sc.setLogLevel("ERROR")
-    
+
     val rdd_input = read_files(sc, input)
     val (rdd_stopwords, vocabArray) = remove_stopwords(rdd_input, 10000)
-    
+
     var vocab_string = vocabArray.mkString(",")
     var vocab_array = Array(vocab_string)
     val rdd_vocab = sc.parallelize(vocab_array)
-    
+
     // Debug output
     println("# of articles: " + rdd_stopwords.count)
-    
+
     rdd_stopwords.saveAsTextFile(output)
     rdd_vocab.saveAsTextFile(output + "-vocab")
   }
-  
+
   private def read_files(
       sc: SparkContext,
       path: String)
-      : (RDD[(Int, String, String)]) = {  
+      : (RDD[(Int, String, String)]) = {
     // configure hadoop
     sc.hadoopConfiguration.set(XmlInputFormat.START_TAG_KEY, "<page>")
     sc.hadoopConfiguration.set(XmlInputFormat.END_TAG_KEY, "</page>")
     sc.hadoopConfiguration.set(XmlInputFormat.ENCODING_KEY, "utf-8")
-    
+
     // read file
     val rdd_input = sc.newAPIHadoopFile(path, classOf[XmlInputFormat], classOf[LongWritable], classOf[Text])
 
@@ -68,22 +70,30 @@ class ArticleParser(input: String, output: String) {
       .filter(s => s._2 == 0)
       .filter(s => !s._4.startsWith("#REDIRECT"))
       .map({ s =>
-          val replaced = s._4.replaceAll("\\W", " ")
-          val tknzed = replaced.split("\\W").filter(_.size > 3)
+          val d  = Jsoup.parse(s._4);
+          val body = d.body();
+          body.getElementsByTag("ref").remove();
+          val rawText = body.text()
+          val replaced = rawText.replaceAll("\\W", " ")
+          val stemmer = new englishStemmer();
+          val tknzed = replaced.split("\\W").filter(_.size > 3).map({s =>
+            stemmer.setCurrent(s)
+            stemmer.stem
+            stemmer.getCurrent})
           val trimmed = tknzed.mkString(" ")
         (s._1, s._3, trimmed)
       })
-      
+
     (rdd_preprocessing)
   }
-  
+
   private def remove_stopwords(
       rdd_before : RDD[(Int, String, String)],
       vocabSize : Int)
       : (RDD[(String)], Array[String]) = {
     val sqlContext= new org.apache.spark.sql.SQLContext(sc)
     import sqlContext.implicits._
-    
+
     val df = rdd_before.toDF("id", "title", "text")
     val tokenizer = new RegexTokenizer()
         .setInputCol("text")
@@ -98,7 +108,7 @@ class ArticleParser(input: String, output: String) {
     val pipeline = new Pipeline()
         .setStages(Array(tokenizer, stopWordsRemover, countVectorizer))
     val model = pipeline.fit(df)
-    
+
     val rdd_after = model
         .transform(df)
         .select("id", "title", "features")
@@ -107,18 +117,20 @@ class ArticleParser(input: String, output: String) {
             case Row(id: Int, title: String, text: SparseVector)
             => (id.toString + ';' + title + ';' + text)
         })
-    
+
     (rdd_after, model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary)
   }
 }
 
 object ArticleParser {
-  def main(args: Array[String]): Unit = {    
+  def main(args: Array[String]): Unit = {
     if (args.isEmpty) {
       println("Usage: scala <main class> <input file location> <output file directory, nonexistent>")
       sys.exit(1)
     }
-    new ArticleParser(args(0), args(1)).run()
+    val input = args(0)
+    val output = "new_articles"
+    new ArticleParser(input, output).run()
   }
 
 }
