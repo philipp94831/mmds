@@ -25,13 +25,17 @@ public class Spark {
 	}
 
 	public Spark set(String key, String value) {
+		conf.setIfMissing(key, value);
+		return this;
+	}
+
+	public Spark override(String key, String value) {
 		conf.set(key, value);
 		return this;
 	}
 
 	public Spark setMaster(String master) {
-		conf.setIfMissing("spark.master", master);
-		return this;
+		return set("spark.master", master);
 	}
 
 	public Spark setWorkerMemory(String memory) {

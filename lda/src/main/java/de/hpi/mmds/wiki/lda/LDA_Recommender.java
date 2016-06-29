@@ -77,7 +77,7 @@ public class LDA_Recommender implements Serializable, Recommender {
 			FileSystem fs) {
 		LDA lda = new LDA().setK(numTopics).setMaxIterations(iterations).setOptimizer("em");
 		JavaPairRDD<Long, Vector> documents = jsc.textFile(fs.makeQualified(data).toString())
-				.mapToPair(LDA_Recommender::parseDocuments);
+				.mapToPair(LDA_Recommender::parseDocuments).cache();
 		DistributedLDAModel model = (DistributedLDAModel) lda.run(documents);
 		return new LDA_Recommender(model);
 	}

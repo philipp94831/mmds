@@ -78,7 +78,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>de.hpi.mmds.wiki.App</mainClass>
+              <mainClass>de.hpi.mmds.wiki.LDADemo</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
