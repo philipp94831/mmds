@@ -11,7 +11,7 @@ class LatentDirichletAllocation(input: String, output: String, num_topics: Int) 
   val sc = {
     // If we use spark-submit, the SparkContext will be configured for us.
     val conf = new SparkConf(true)
-    conf.setIfMissing("spark.master", "local[2]") // Run locally by default.
+    conf.setIfMissing("spark.master", "local[16]") // Run locally by default.
     conf.setAppName(s"lda ($input, $output, num_topics=$num_topics)")
     new SparkContext(conf)
   }
