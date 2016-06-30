@@ -1,9 +1,10 @@
 package de.hpi.mmds.parsing.articles
 
 // import spark stuff
+import java.io.{BufferedWriter, FileWriter}
+
+import de.hpi.mmds.parsing.documents.SimpleWikiTextParser
 import org.apache.spark.{SparkConf, SparkContext}
-import org.jsoup.Jsoup
-import org.tartarus.snowball.ext.englishStemmer
 
 // import xml stuff
 import com.databricks.spark.xml.XmlInputFormat
@@ -22,7 +23,8 @@ class ArticleParser(input: String, output: String) {
   val sc = {
     // If we use spark-submit, the SparkContext will be configured for us.
     val conf = new SparkConf(true)
-    conf.setIfMissing("spark.master", "local[2]") // Run locally by default.
+    conf.setIfMissing("spark.master", "local[4]") // Run locally by default.
+    conf.set("spark.executor.memory", "2g") // Run locally by default.
     conf.setAppName(s"lda ($input) ($output)")
     new SparkContext(conf)
   }
@@ -41,8 +43,20 @@ class ArticleParser(input: String, output: String) {
     // Debug output
     println("# of articles: " + rdd_stopwords.count)
 
-    rdd_stopwords.saveAsTextFile(output)
-    rdd_vocab.saveAsTextFile(output + "-vocab")
+    val it = rdd_stopwords.toLocalIterator
+    val out = new BufferedWriter(new FileWriter(output + ".csv"))
+    while(it.hasNext) {
+      val s = it.next
+      out.write(s)
+      out.newLine
+    }
+    val it2 = rdd_vocab.toLocalIterator
+    val out2 = new BufferedWriter(new FileWriter(output + "-vocab.txt"))
+    while(it2.hasNext) {
+      val s = it2.next
+      out2.write(s)
+      out2.newLine
+    }
   }
 
   private def read_files(
@@ -69,20 +83,8 @@ class ArticleParser(input: String, output: String) {
       })
       .filter(s => s._2 == 0)
       .filter(s => !s._4.startsWith("#REDIRECT"))
-      .map({ s =>
-          val d  = Jsoup.parse(s._4);
-          val body = d.body();
-          body.getElementsByTag("ref").remove();
-          val rawText = body.text()
-          val replaced = rawText.replaceAll("\\W", " ")
-          val stemmer = new englishStemmer();
-          val tknzed = replaced.split("\\W").filter(_.size > 3).map({s =>
-            stemmer.setCurrent(s)
-            stemmer.stem
-            stemmer.getCurrent})
-          val trimmed = tknzed.mkString(" ")
-        (s._1, s._3, trimmed)
-      })
+      .filter(s => !s._4.endsWith("{{disambiguation}}"))
+        .toJavaRDD().map(new SimpleWikiTextParser).rdd
 
     (rdd_preprocessing)
   }
@@ -124,12 +126,12 @@ class ArticleParser(input: String, output: String) {
 
 object ArticleParser {
   def main(args: Array[String]): Unit = {
-    if (args.isEmpty) {
+    if (false && args.isEmpty) {
       println("Usage: scala <main class> <input file location> <output file directory, nonexistent>")
       sys.exit(1)
     }
-    val input = args(0)
-    val output = "new_articles"
+    val input = "data/enwiki-20160407-pages-articles.xml"
+    val output = "data/full_articles"
     new ArticleParser(input, output).run()
   }
 

@@ -14,6 +14,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -49,13 +50,28 @@ public class Evaluator {
 	public Evaluator(Recommender recommender, Edits test, Edits training, OutputStream out) {
 		this.recommender = recommender;
 		this.training = training.cache();
+		this.groundTruths = generateGroundTruth(test, training);
+		this.out = out;
+	}
+
+	public static JavaPairRDD<Integer, Set<Integer>> generateGroundTruth(Edits test, Edits training) {
 		JavaPairRDD<Integer, Iterable<Integer>> possibleRecommendations = test.getAllEdits().mapToPair(swap())
 				.join(training.getArticles().mapToPair(article -> new Tuple2<>(article, null)))
 				.mapToPair(t -> new Tuple2<>(t._2._1, t._1)).groupByKey();
-		this.groundTruths = possibleRecommendations.join(training.getAggregatedEdits()).mapValues(
+		return possibleRecommendations.join(training.getAggregatedEdits()).mapValues(
 				t -> (Set<Integer>) Sets.difference(Sets.newHashSet(t._1), Sets.newHashSet(t._2)).immutableCopy())
 				.filter(t -> !t._2.isEmpty());
-		this.out = out;
+	}
+
+	public void saveGroundTruth(String path, FileSystem fs) throws IOException {
+		try(BufferedWriter out = fs.create(path)) {
+			Iterator<Tuple2<Integer, Integer>> it = groundTruths.flatMapValues(s -> s).toLocalIterator();
+			while(it.hasNext()) {
+				Tuple2<Integer, Integer> t = it.next();
+				out.write(t._1() + "," + t._2());
+				out.newLine();
+			}
+		}
 	}
 
 	private static Tuple2<Integer, Integer> parseGroundTruth(String s) {

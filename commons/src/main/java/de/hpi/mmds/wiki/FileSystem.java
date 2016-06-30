@@ -25,6 +25,10 @@ public class FileSystem implements Closeable {
 		return new FileSystem(fs);
 	}
 
+	public static FileSystem get(String uri) throws IOException {
+		return FileSystem.get(URI.create(uri));
+	}
+
 	public static FileSystem getLocal() throws IOException {
 		return new FileSystem(org.apache.hadoop.fs.FileSystem.get(new Configuration()));
 	}

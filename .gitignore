@@ -13,3 +13,4 @@ filter/
 .idea/
 .cache-main
 .cache-tests
+ldamodel/

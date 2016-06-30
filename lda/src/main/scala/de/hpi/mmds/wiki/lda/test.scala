@@ -17,7 +17,7 @@ class test(input: String, output: String, num_topics: Int) {
     
     // load model
     val recommender = LDA_Recommender.load(sc, output)
-    //recommender.recommend(991, 3)
+    recommender.recommend(991, sc.parallelize(Array(new Integer(3))).toJavaRDD())
   }
 }
 

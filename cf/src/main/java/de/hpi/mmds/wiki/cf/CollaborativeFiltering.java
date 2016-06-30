@@ -28,8 +28,10 @@ public class CollaborativeFiltering implements Recommender {
 	private static final String META_PATH = "/meta";
 	private static final double LOG2 = Math.log(2);
 	private static final double RECOMMEND_THRESHOLD = 0.0;
-	private static final long serialVersionUID = 5290472017062948755L;
 	private final MatrixFactorizationModel model;
+	private static final double midpoint = 1;
+	private static final double steepness = 4;
+	private static final double offset = logistic(0, midpoint, steepness, 1.0);
 
 	public CollaborativeFiltering(MatrixFactorizationModel model) {
 		this.model = model;
@@ -58,7 +60,8 @@ public class CollaborativeFiltering implements Recommender {
 
 	public static CollaborativeFiltering train(JavaSparkContext jsc, String path, int rank, int iterations,
 			double lambda, double alpha, FileSystem fs) {
-		JavaRDD<Rating> ratings = jsc.textFile(fs.makeQualified(path).toString()).map(CollaborativeFiltering::parseRating);
+		JavaRDD<Rating> ratings = jsc.textFile(fs.makeQualified(path).toString())
+				.map(CollaborativeFiltering::parseRating);
 		// ratings.cache();
 		MatrixFactorizationModel model = ALS.trainImplicit(ratings.rdd(), rank, iterations, lambda, alpha);
 		ratings.unpersist();
@@ -73,12 +76,20 @@ public class CollaborativeFiltering implements Recommender {
 	public List<Recommendation> recommend(int userId, int howMany) {
 		try {
 			Rating[] recommendations = model.recommendProducts(userId, howMany);
-			return Arrays.stream(recommendations).filter(r -> r.rating() >= RECOMMEND_THRESHOLD)
-					.map(r -> new Recommendation(r.rating(), r.product())).collect(Collectors.toList());
+			return Arrays.stream(recommendations).map(r -> new Recommendation(r.rating(), r.product()))
+					.filter(r -> r.getPrediction() >= RECOMMEND_THRESHOLD).collect(Collectors.toList());
 		} catch (NoSuchElementException e) {
 			// user not included in the model
 		}
 		return Collections.emptyList();
+	}
+
+	private static double transformRating(double rating) {
+		return logistic(rating, midpoint, steepness, 1.0 + offset) - offset;
+	}
+
+	private static double logistic(double x, double midpoint, double steepness, double max) {
+		return max / (1 + Math.exp(-steepness * (x - midpoint)));
 	}
 
 	public CollaborativeFiltering save(String filterDir, FileSystem fs) throws IOException {
