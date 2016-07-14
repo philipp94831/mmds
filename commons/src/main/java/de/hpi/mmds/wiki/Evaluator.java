@@ -31,13 +31,13 @@ public class Evaluator {
 	private final OutputStream out;
 	private final Recommender recommender;
 	private final JavaPairRDD<Integer, Set<Integer>> groundTruths;
-	public static final int PERCENTAGE = 5;
+	public static final int PERCENTAGE = 10;
 
 	public Evaluator(Recommender recommender, Edits training, String ground_truth, OutputStream out, FileSystem fs) {
 		this.recommender = recommender;
 		this.training = training.cache();
 		this.groundTruths = JavaSparkContext.fromSparkContext(training.getAggregatedEdits().context())
-				.textFile(fs.makeQualified(ground_truth).toString()).mapToPair(Evaluator::parseGroundTruth).filter(t -> t._2() % 100 < PERCENTAGE).mapValues(i -> {
+				.textFile(fs.makeQualified(ground_truth).toString()).mapToPair(Evaluator::parseGroundTruth).mapValues(i -> {
 					Set<Integer> s = new HashSet<>();
 					s.add(i);
 					return s;
