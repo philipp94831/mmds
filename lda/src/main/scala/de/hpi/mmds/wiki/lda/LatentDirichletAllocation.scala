@@ -3,7 +3,7 @@ package de.hpi.mmds.wiki.lda
 import scala.collection.mutable
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.mllib.clustering.LDA
-import org.apache.spark.mllib.clustering.DistributedLDAModel
+import org.apache.spark.mllib.clustering.LocalLDAModel
 import org.apache.spark.mllib.linalg.{SparseVector, Vector, Vectors}
 import org.apache.spark.rdd.RDD
 
@@ -11,7 +11,7 @@ class LatentDirichletAllocation(input: String, output: String, num_topics: Int) 
   val sc = {
     // If we use spark-submit, the SparkContext will be configured for us.
     val conf = new SparkConf(true)
-    conf.setIfMissing("spark.master", "local[16]") // Run locally by default.
+    conf.setIfMissing("spark.master", "local[*]") // Run locally by default.
     conf.setAppName(s"lda ($input, $output, num_topics=$num_topics)")
     new SparkContext(conf)
   }
@@ -26,32 +26,9 @@ class LatentDirichletAllocation(input: String, output: String, num_topics: Int) 
     val lda:LDA = new LDA()
         .setK(num_topics)
         .setMaxIterations(10)
-        .setOptimizer("em")
+        .setOptimizer("online")
     
-    val ldaModel = lda.run(documents).asInstanceOf[DistributedLDAModel]
-    
-    // Debug output
-    val topicIndices = ldaModel.describeTopics(maxTermsPerTopic = 3)
-    val topics = topicIndices.map({case (terms, termWeights) =>
-        terms.zip(termWeights).map ({ case (term, weight) =>
-          (vocab(term.toInt), weight)
-        })
-    })
-    topics.zipWithIndex.foreach { case (topic, i) =>
-        println(s"TOPIC $i")
-        topic.foreach { case (term, weight) =>
-            println(s"$term\t$weight")
-        }
-        println()
-    }
-    val topicAssignments = ldaModel.topDocumentsPerTopic(maxDocumentsPerTopic = 3)
-    topicAssignments.foreach { case (docs, docWeights) =>
-      println("ASSIGNMENTS:")
-      docs.zip(docWeights).foreach { case (doc, dweight) =>
-        println(s"${doc.toLong}\t$dweight")
-      }
-      println()
-    }
+    val ldaModel = lda.run(documents).asInstanceOf[LocalLDAModel]
     
     ldaModel.save(sc, output)
   }

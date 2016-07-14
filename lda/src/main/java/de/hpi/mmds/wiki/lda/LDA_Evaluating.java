@@ -18,14 +18,9 @@ import java.io.IOException;
 public class LDA_Evaluating {
 
 	public static void main(String[] args) {
-		try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").context();
-      FileSystem fs = FileSystem.getLocal()) {
-        
-      SparkConf conf = new SparkConf();
-      SparkContext sc = new SparkContext(conf);
-      conf.setIfMissing("spark.master", "local");
+		try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").context(); FileSystem fs = FileSystem.getLocal()) {
 			Edits training = new Edits(jsc, "C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/test", fs);
-			Recommender recommender = LDA_Recommender.load(sc, "C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/model");
+			Recommender recommender = LDA_Recommender.load(jsc.sc(), "C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/model");
 			File file = new File("C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/eval-output");
 			try (FileOutputStream out = new FileOutputStream(file)) {
 				Evaluator eval = new Evaluator(recommender, training, "C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/ground_truth", out, fs);
