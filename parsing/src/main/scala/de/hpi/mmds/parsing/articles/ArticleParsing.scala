@@ -1,10 +1,13 @@
 package de.hpi.mmds.parsing.articles
 
 // import spark stuff
-import java.io.{BufferedWriter, FileWriter}
+import java.io.File
+import java.nio.charset.StandardCharsets
 
-import de.hpi.mmds.parsing.documents.SimpleWikiTextParser
-import org.apache.spark.{SparkConf, SparkContext}
+import de.hpi.mmds.wiki.Spark
+import org.apache.commons.io.FileUtils
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.SQLContext
 
 // import xml stuff
 import com.databricks.spark.xml.XmlInputFormat
@@ -22,47 +25,23 @@ import org.apache.spark.sql.Row
 class ArticleParser(input: String, output: String) {
   val sc = {
     // If we use spark-submit, the SparkContext will be configured for us.
-    val conf = new SparkConf(true)
-    conf.setIfMissing("spark.master", "local[4]") // Run locally by default.
-    conf.set("spark.executor.memory", "2g") // Run locally by default.
-    conf.setAppName(s"lda ($input) ($output)")
-    new SparkContext(conf)
+    new Spark(s"lda ($input) ($output)").setMaster("local[4]").setWorkerMemory("2g").context()
   }
 
   def run() = {
     // DEBUG
     sc.setLogLevel("ERROR")
 
-    val rdd_input = read_files(sc, input)
-    val (rdd_stopwords, vocabArray) = remove_stopwords(rdd_input, 10000)
+    val parsed = parse(sc, input)
 
-    var vocab_string = vocabArray.mkString(",")
-    var vocab_array = Array(vocab_string)
-    val rdd_vocab = sc.parallelize(vocab_array)
+    val (vectorized, vocab) = vectorize(parsed, 10000)
 
-    // Debug output
-    println("# of articles: " + rdd_stopwords.count)
+    Spark.saveToFile(vectorized, output + ".csv")
 
-    val it = rdd_stopwords.toLocalIterator
-    val out = new BufferedWriter(new FileWriter(output + ".csv"))
-    while(it.hasNext) {
-      val s = it.next
-      out.write(s)
-      out.newLine
-    }
-    val it2 = rdd_vocab.toLocalIterator
-    val out2 = new BufferedWriter(new FileWriter(output + "-vocab.txt"))
-    while(it2.hasNext) {
-      val s = it2.next
-      out2.write(s)
-      out2.newLine
-    }
+    FileUtils.writeStringToFile(new File(output + "-vocab.txt"), vocab.mkString(","), StandardCharsets.UTF_8)
   }
 
-  private def read_files(
-      sc: SparkContext,
-      path: String)
-      : (RDD[(Int, String, String)]) = {
+  private def parse(sc: SparkContext, path: String): (RDD[(Integer, String)]) = {
     // configure hadoop
     sc.hadoopConfiguration.set(XmlInputFormat.START_TAG_KEY, "<page>")
     sc.hadoopConfiguration.set(XmlInputFormat.END_TAG_KEY, "</page>")
@@ -74,64 +53,63 @@ class ArticleParser(input: String, output: String) {
     // transform rdd to usable format
     val rdd_preprocessing = rdd_input
       .map({ s =>
-          val xml = XML.loadString(s._2.toString)
-          val id = (xml \ "id").text.toInt
-          val ns = (xml \ "ns").text.toInt
-          val title = (xml \ "title").text
-          val text = (xml \ "revision" \ "text").text
-        (id, ns, title, text )
+        val xml = XML.loadString(s._2.toString)
+        val id = (xml \ "id").text.toInt
+        val ns = (xml \ "ns").text.toInt
+        val title = (xml \ "title").text
+        val text = (xml \ "revision" \ "text").text
+        new Article(id, text, title, ns)
       })
-      .filter(s => s._2 == 0)
-      .filter(s => !s._4.startsWith("#REDIRECT"))
-      .filter(s => !s._4.endsWith("{{disambiguation}}"))
-        .toJavaRDD().map(new SimpleWikiTextParser).rdd
+      .filter(_.getNamespace == 0)
+      .filter(!_.isRedirect)
+      .filter(!_.isDisambugation)
+      .toJavaRDD().map(new AdvancedWikiTextParser).rdd.filter(_ != null)
 
-    (rdd_preprocessing)
+    rdd_preprocessing
   }
 
-  private def remove_stopwords(
-      rdd_before : RDD[(Int, String, String)],
-      vocabSize : Int)
-      : (RDD[(String)], Array[String]) = {
-    val sqlContext= new org.apache.spark.sql.SQLContext(sc)
+  private def vectorize(parsed: RDD[(Integer, String)], vocabSize: Int): (RDD[(String)], Array[String]) = {
+    val sqlContext = new SQLContext(sc)
     import sqlContext.implicits._
 
-    val df = rdd_before.toDF("id", "title", "text")
+    val textCol = "text"
+    val rawTokensCol = "rawTokens"
+    val tokensCol = "tokens"
+    val idCol = "id"
+    val vectorizedCol = "vectorized"
+
+    val df = parsed.toDF(idCol, textCol)
     val tokenizer = new RegexTokenizer()
-        .setInputCol("text")
-        .setOutputCol("rawTokens")
+      .setInputCol(textCol)
+      .setOutputCol(rawTokensCol)
     val stopWordsRemover = new StopWordsRemover()
-        .setInputCol("rawTokens")
-        .setOutputCol("tokens")
+      .setInputCol(rawTokensCol)
+      .setOutputCol(tokensCol)
     val countVectorizer = new CountVectorizer()
-        .setVocabSize(10000)
-        .setInputCol("tokens")
-        .setOutputCol("features")
+      .setVocabSize(vocabSize)
+      .setInputCol(tokensCol)
+      .setOutputCol(vectorizedCol)
     val pipeline = new Pipeline()
-        .setStages(Array(tokenizer, stopWordsRemover, countVectorizer))
+      .setStages(Array(tokenizer, stopWordsRemover, countVectorizer))
     val model = pipeline.fit(df)
 
-    val rdd_after = model
-        .transform(df)
-        .select("id", "title", "features")
-        .rdd
-        .map({
-            case Row(id: Int, title: String, text: SparseVector)
-            => (id.toString + ';' + title + ';' + text)
-        })
+    val vectorized = model
+      .transform(df)
+      .select(idCol, vectorizedCol)
+      .rdd
+      .map({
+        case Row(id: Integer, text: SparseVector)
+        => id.toString + ';' + text
+      })
 
-    (rdd_after, model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary)
+    (vectorized, model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary)
   }
 }
 
 object ArticleParser {
-  def main(args: Array[String]): Unit = {
-    if (false && args.isEmpty) {
-      println("Usage: scala <main class> <input file location> <output file directory, nonexistent>")
-      sys.exit(1)
-    }
-    val input = "data/enwiki-20160407-pages-articles.xml"
-    val output = "data/full_articles"
+  def main(args: Array[String]) {
+    val input = if (args.length > 0) args(0) else "data/enwiki-20160407-pages-articles.xml"
+    val output = if (args.length > 1) args(1) else "data/advanced_articles"
     new ArticleParser(input, output).run()
   }
 

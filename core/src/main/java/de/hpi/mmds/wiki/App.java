@@ -1,7 +1,7 @@
 package de.hpi.mmds.wiki;
 
 import de.hpi.mmds.wiki.cf.CollaborativeFiltering;
-import de.hpi.mmds.wiki.lda.LDA_Recommender;
+import de.hpi.mmds.wiki.lda.LDARecommender;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -26,7 +26,7 @@ public class App {
 				FileSystem fs = FileSystem.getLocal()) {
 			Edits training = new Edits(jsc, TRAINING_DATA, fs);
 			MultiRecommender recommender = new MultiRecommender().add(CollaborativeFiltering.load(jsc, CF_DIR, fs))
-					.add(LDA_Recommender.load(jsc.sc(), LDA_DIR, fs));
+					.add(LDARecommender.load(jsc.sc(), LDA_DIR, fs));
 			File file = new File(OUT_FILE);
 			File parentFile = file.getParentFile();
 			if (parentFile != null) {

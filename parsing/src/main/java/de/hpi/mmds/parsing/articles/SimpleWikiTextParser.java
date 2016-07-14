@@ -1,4 +1,4 @@
-package de.hpi.mmds.parsing.documents;
+package de.hpi.mmds.parsing.articles;
 
 import org.apache.spark.api.java.function.Function;
 import org.jsoup.Jsoup;

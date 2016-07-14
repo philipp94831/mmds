@@ -9,6 +9,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.mllib.recommendation.ALS;
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel;
 import org.apache.spark.mllib.recommendation.Rating;
+import org.apache.spark.storage.StorageLevel;
 
 import scala.Tuple2;
 
@@ -61,8 +62,7 @@ public class CollaborativeFiltering implements Recommender {
 	public static CollaborativeFiltering train(JavaSparkContext jsc, String path, int rank, int iterations,
 			double lambda, double alpha, FileSystem fs) {
 		JavaRDD<Rating> ratings = jsc.textFile(fs.makeQualified(path).toString())
-				.map(CollaborativeFiltering::parseRating);
-		// ratings.cache();
+				.map(CollaborativeFiltering::parseRating).persist(StorageLevel.MEMORY_AND_DISK());
 		MatrixFactorizationModel model = ALS.trainImplicit(ratings.rdd(), rank, iterations, lambda, alpha);
 		ratings.unpersist();
 		return new CollaborativeFiltering(model);

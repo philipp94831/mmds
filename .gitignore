@@ -14,3 +14,4 @@ filter/
 .cache-main
 .cache-tests
 ldamodel/
+failed/

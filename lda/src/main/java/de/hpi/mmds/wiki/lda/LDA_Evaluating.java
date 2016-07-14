@@ -2,7 +2,6 @@ package de.hpi.mmds.wiki.lda;
 
 import de.hpi.mmds.wiki.Edits;
 import de.hpi.mmds.wiki.Recommender;
-import de.hpi.mmds.wiki.lda.LDA_Recommender;
 import de.hpi.mmds.wiki.Evaluator;
 import de.hpi.mmds.wiki.Spark;
 import de.hpi.mmds.wiki.FileSystem;
@@ -25,7 +24,8 @@ public class LDA_Evaluating {
       SparkContext sc = new SparkContext(conf);
       conf.setIfMissing("spark.master", "local");
 			Edits training = new Edits(jsc, "C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/test", fs);
-			Recommender recommender = LDA_Recommender.load(sc, "C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/model");
+			Recommender recommender = LDARecommender
+					.load(sc, "C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/model");
 			File file = new File("C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/eval-output");
 			try (FileOutputStream out = new FileOutputStream(file)) {
 				Evaluator eval = new Evaluator(recommender, training, "C:/Users/Marianne/Documents/Uni/HPI/Semester_1/MMDS-Mining_Massive_Datasets/data/ground_truth", out, fs);

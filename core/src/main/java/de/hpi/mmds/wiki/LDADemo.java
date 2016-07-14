@@ -1,6 +1,6 @@
 package de.hpi.mmds.wiki;
 
-import de.hpi.mmds.wiki.lda.LDA_Recommender;
+import de.hpi.mmds.wiki.lda.LDARecommender;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -29,12 +29,12 @@ public class LDADemo {
 			if (!fs.exists(MODEL)) {
 				try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").setMaster("local[4]").setWorkerMemory("2g")
 						.context()) {
-					LDA_Recommender.train(jsc, DOCUMENTS, NUM_TOPICS, ITERATIONS, fs).save(MODEL, fs);
+					LDARecommender.train(jsc, DOCUMENTS, NUM_TOPICS, ITERATIONS, fs).save(MODEL, fs);
 				}
 			}
 			try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").setMaster("local[4]").setWorkerMemory("2g")
 					.context()) {
-				Recommender r = LDA_Recommender.load(jsc, MODEL, fs);
+				Recommender r = LDARecommender.load(jsc, MODEL, fs);
 				Edits edits = new Edits(jsc, TRAINING_DATA, fs);
 				File file = new File(OUT_FILE);
 				file.getParentFile().mkdirs();
