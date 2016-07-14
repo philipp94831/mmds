@@ -31,16 +31,18 @@ class LatentDirichletAllocation(input: String, output: String, num_topics: Int) 
     val ldaModel = lda.run(documents).asInstanceOf[LocalLDAModel]
     
     ldaModel.save(sc, output)
+    
+    sc.setLogLevel("INFO")
   }
     
   def load (path: String)
   : (RDD[(Long, Vector)], Array[String]) = {
-    val input = sc.textFile(path)
+    val input = sc.textFile(path + ".csv")
     val output = input.map({ s =>
         val elements = s.split(';')
         (elements(0).toLong, Vectors.parse(elements(elements.size - 1)))
     })
-    val vocab_rdd = sc.textFile(path + "-vocab")
+    val vocab_rdd = sc.textFile(path + "-vocab.txt")
     val vocab = vocab_rdd.first().split("\\W+")
     (output, vocab)
   }
