@@ -18,6 +18,7 @@ public class App {
 	private static final String LDA_DIR = "ldamodel/1M";
 	private static final String TRAINING_DATA = DATA_DIR + "edits/training_data0.txt";
 	private static final String TEST_DATA = DATA_DIR + "edits/test_data0.txt";
+	private static final String DOCUMENTS = DATA_DIR + "advanced_articles.csv";
 	private static final String GROUND_TRUTH = DATA_DIR + "ground_truth_1M.csv";
 	private static final String OUT_FILE = "log/eval_" + NAME + ".txt";
 
@@ -26,7 +27,7 @@ public class App {
 				FileSystem fs = FileSystem.getLocal()) {
 			Edits training = new Edits(jsc, TRAINING_DATA, fs);
 			MultiRecommender recommender = new MultiRecommender().add(CollaborativeFiltering.load(jsc, CF_DIR, fs))
-					.add(LDARecommender.load(jsc.sc(), LDA_DIR, fs));
+					.add(LDARecommender.load(jsc, LDA_DIR, fs, DOCUMENTS));
 			File file = new File(OUT_FILE);
 			File parentFile = file.getParentFile();
 			if (parentFile != null) {

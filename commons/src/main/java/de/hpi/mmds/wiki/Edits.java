@@ -18,7 +18,7 @@ public class Edits implements Serializable {
 	private final JavaPairRDD<Integer, Iterable<Integer>> edits;
 
 	public Edits(JavaSparkContext jsc, String dataDir, FileSystem fs) {
-		edits = jsc.textFile(fs.makeQualified(dataDir).toString()).mapToPair(Edits::parseEdits).groupByKey();
+		edits = jsc.textFile(fs.makeQualified(dataDir).toString()).mapToPair(Edits::parseEdits).filter(t -> t._2() % 100 < Evaluator.PERCENTAGE).groupByKey();
 	}
 
 	private static Tuple2<Integer, Integer> parseEdits(String s) {
