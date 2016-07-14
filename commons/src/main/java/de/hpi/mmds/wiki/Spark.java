@@ -1,7 +1,15 @@
 package de.hpi.mmds.wiki;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Iterator;
 
 public class Spark {
 
@@ -40,5 +48,20 @@ public class Spark {
 
 	public Spark setWorkerMemory(String memory) {
 		return set("spark.executor.memory", memory);
+	}
+
+	public static void saveToFile(JavaRDD<String> rdd, String path) throws IOException {
+		File file = new File(path);
+		file.getParentFile().mkdirs();
+		if (file.exists()) {
+			FileUtils.forceDelete(file);
+		}
+		try (BufferedWriter out = new BufferedWriter(new FileWriter(file))) {
+			Iterator<String> it = rdd.toLocalIterator();
+			while (it.hasNext()) {
+				out.write(it.next());
+				out.newLine();
+			}
+		}
 	}
 }

@@ -1,11 +1,6 @@
 package de.hpi.mmds.wiki.lda
 
-import scala.collection.mutable
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.mllib.clustering.LDA
-import org.apache.spark.mllib.clustering.DistributedLDAModel
-import org.apache.spark.mllib.linalg.{SparseVector, Vector, Vectors}
-import org.apache.spark.rdd.RDD
 
 class test(input: String, output: String, num_topics: Int) {
   val sc = {
@@ -21,8 +16,8 @@ class test(input: String, output: String, num_topics: Int) {
     sc.setLogLevel("ERROR")
     
     // load model
-    val recommender = LDA_Recommender.load(sc, output)
-    recommender.recommend(991, 3)
+    val recommender = LDARecommender.load(sc, output)
+    recommender.recommend(991, sc.parallelize(Array(new Integer(3))).toJavaRDD())
   }
 }
 
