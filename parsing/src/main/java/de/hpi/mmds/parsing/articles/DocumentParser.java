@@ -1,10 +1,10 @@
 package de.hpi.mmds.parsing.articles;
 
 import de.hpi.mmds.parsing.revision.DataAggregator;
-import de.hpi.mmds.wiki.Edits;
 import de.hpi.mmds.wiki.FileSystem;
 import de.hpi.mmds.wiki.Spark;
 
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
 import scala.Tuple2;
@@ -19,13 +19,13 @@ public class DocumentParser {
 	public static void main(String[] args) {
 		try (JavaSparkContext jsc = Spark.newApp(DataAggregator.class.getName()).setMaster("local[4]")
 				.setWorkerMemory("2g").context();
-				BufferedWriter out = new BufferedWriter(new FileWriter("data/2012full_articles1M.csv"));
+				BufferedWriter out = new BufferedWriter(new FileWriter("data/training_new.txt"));
 				FileSystem fs = FileSystem.getLocal()) {
-			Edits edits = new Edits(jsc, "data/edits/training_data0.txt", fs);
-			Iterator<String> it = jsc.textFile("data/2012full_articles.csv")
-					.mapToPair(s -> new Tuple2<>(Integer.parseInt(s.split(";")[0]), s))
-					.join(edits.getArticles().mapToPair(i -> new Tuple2<>(i, null))).map(t -> t._2._1)
-					.toLocalIterator();
+			JavaPairRDD<Integer, String> edits = jsc.textFile("data/edits/training*.txt")
+					.mapToPair(s -> new Tuple2<>(Integer.parseInt(s.split(",")[1]), s));
+			Iterator<String> it = jsc.textFile("data/advanced_articles.csv")
+					.mapToPair(s -> new Tuple2<>(Integer.parseInt(s.split(";")[0]), null)).join(edits)
+					.map(t -> t._2()._2()).toLocalIterator();
 			while (it.hasNext()) {
 				out.write(it.next());
 				out.newLine();

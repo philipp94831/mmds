@@ -31,6 +31,7 @@ public class Evaluator {
 	private final OutputStream out;
 	private final Recommender recommender;
 	private final JavaPairRDD<Integer, Set<Integer>> groundTruths;
+	public static final int PERCENTAGE = 10;
 
 	public Evaluator(Recommender recommender, Edits training, String ground_truth, OutputStream out, FileSystem fs) {
 		this.recommender = recommender;
