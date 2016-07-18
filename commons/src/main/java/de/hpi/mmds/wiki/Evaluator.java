@@ -12,6 +12,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -19,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -31,13 +34,13 @@ public class Evaluator {
 	private final OutputStream out;
 	private final Recommender recommender;
 	private final JavaPairRDD<Integer, Set<Integer>> groundTruths;
-	public static final int PERCENTAGE = 10;
 
 	public Evaluator(Recommender recommender, Edits training, String ground_truth, OutputStream out, FileSystem fs) {
 		this.recommender = recommender;
 		this.training = training.cache();
 		this.groundTruths = JavaSparkContext.fromSparkContext(training.getAggregatedEdits().context())
-				.textFile(fs.makeQualified(ground_truth).toString()).mapToPair(Evaluator::parseGroundTruth).mapValues(i -> {
+				.textFile(fs.makeQualified(ground_truth).toString()).mapToPair(Evaluator::parseGroundTruth)
+				.mapValues(i -> {
 					Set<Integer> s = new HashSet<>();
 					s.add(i);
 					return s;
@@ -65,9 +68,9 @@ public class Evaluator {
 	}
 
 	public void saveGroundTruth(String path, FileSystem fs) throws IOException {
-		try(BufferedWriter out = fs.create(path)) {
+		try (BufferedWriter out = fs.create(path)) {
 			Iterator<Tuple2<Integer, Integer>> it = groundTruths.flatMapValues(s -> s).toLocalIterator();
-			while(it.hasNext()) {
+			while (it.hasNext()) {
 				Tuple2<Integer, Integer> t = it.next();
 				out.write(t._1() + "," + t._2());
 				out.newLine();
@@ -90,10 +93,6 @@ public class Evaluator {
 	public Map<Integer, Result> evaluate(int num, int howMany, long seed) {
 		Map<Integer, Result> results = new HashMap<>();
 		int i = 0;
-		double totalPrecision = 0.0;
-		double totalMAP = 0.0;
-		double totalRecall = 0.0;
-		double totalFmeasure = 0.0;
 		long time;
 		//LOGGER.info("Sampling " + num + " out of " + groundTruths.count() + " users");
 		try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out))) {
@@ -106,31 +105,23 @@ public class Evaluator {
 						.map(Recommendation::getArticle).collect(Collectors.toList());
 				Result<Integer> result = new Result<>(recommendations, groundTruth);
 				results.put(user, result);
-				totalPrecision += result.precision();
-				totalMAP += result.meanAveragePrecision();
-				totalRecall += result.recall();
-				totalFmeasure += result.fmeasure();
 				i++;
-				int median = results.size() / 2;
 				writer.write("User: " + user + "\n");
+				writer.write("History: " + articles.collect());
+				writer.newLine();
 				writer.write(result.printResult());
 				writer.newLine();
-				writer.write("AVG Precision: " + totalPrecision / i + "\n");
-				writer.write("AVG MAP: " + totalMAP / i + "\n");
-				writer.write("AVG Recall: " + totalRecall / i + "\n");
-				writer.write("AVG F-Measure: " + totalFmeasure / i + "\n");
-				writer.write("Median Precision: " + results.values().stream().map(Result::precision).sorted()
-						.collect(Collectors.toList()).get(median) + "\n");
-				writer.write("Median MAP: " + results.values().stream().map(Result::meanAveragePrecision).sorted()
-						.collect(Collectors.toList()).get(median) + "\n");
-				writer.write("Median Recall: " + results.values().stream().map(Result::recall).sorted()
-						.collect(Collectors.toList()).get(median) + "\n");
-				writer.write("Median F-Measure: " + results.values().stream().map(Result::fmeasure).sorted()
-						.collect(Collectors.toList()).get(median) + "\n");
+				writer.write("AVG Precision: " + average(results.values(), Result::precision) + "\n");
+				writer.write("AVG MAP: " + average(results.values(), Result::meanAveragePrecision) + "\n");
+				writer.write("AVG Recall: " + average(results.values(), Result::recall) + "\n");
+				writer.write("AVG F-Measure: " + average(results.values(), Result::fmeasure) + "\n");
+				writer.write("Median Precision: " + median(results.values(), Result::precision) + "\n");
+				writer.write("Median MAP: " + median(results.values(), Result::meanAveragePrecision) + "\n");
+				writer.write("Median Recall: " + median(results.values(), Result::recall) + "\n");
+				writer.write("Median F-Measure: " + median(results.values(), Result::fmeasure) + "\n");
 				writer.write("Processed: " + i + "\n");
 				writer.write("---");
 				writer.newLine();
-//				writer.flush();
 			}
 			time = (System.nanoTime() - start) / 1_000_000;
 			writer.newLine();
@@ -140,24 +131,25 @@ public class Evaluator {
 		}
 		LOGGER.info("Evaluation took " + time + "ms");
 		if (!results.isEmpty()) {
-			int median = results.size() / 2;
-			LOGGER.info("AVG Precision: " + results.values().stream().mapToDouble(Result::precision).average()
-					.getAsDouble());
-			LOGGER.info("AVG MAP: " + results.values().stream().mapToDouble(Result::meanAveragePrecision).average()
-					.getAsDouble());
-			LOGGER.info("AVG Recall: " + results.values().stream().mapToDouble(Result::recall).average().getAsDouble());
-			LOGGER.info("AVG F-Measure: " + results.values().stream().mapToDouble(Result::fmeasure).average()
-					.getAsDouble());
-			LOGGER.info("Median Precision: " + results.values().stream().map(Result::precision).sorted()
-					.collect(Collectors.toList()).get(median));
-			LOGGER.info("Median MAP: " + results.values().stream().map(Result::meanAveragePrecision).sorted()
-					.collect(Collectors.toList()).get(median));
-			LOGGER.info("Median Recall: " + results.values().stream().map(Result::recall).sorted()
-					.collect(Collectors.toList()).get(median));
-			LOGGER.info("Median F-Measure: " + results.values().stream().map(Result::fmeasure).sorted()
-					.collect(Collectors.toList()).get(median));
+			LOGGER.info("AVG Precision: " + average(results.values(), Result::precision));
+			LOGGER.info("AVG MAP: " + average(results.values(), Result::meanAveragePrecision));
+			LOGGER.info("AVG Recall: " + average(results.values(), Result::recall));
+			LOGGER.info("AVG F-Measure: " + average(results.values(), Result::fmeasure));
+			LOGGER.info("Median Precision: " + median(results.values(), Result::precision));
+			LOGGER.info("Median MAP: " + median(results.values(), Result::meanAveragePrecision));
+			LOGGER.info("Median Recall: " + median(results.values(), Result::recall));
+			LOGGER.info("Median F-Measure: " + median(results.values(), Result::fmeasure));
 		}
 		return results;
+	}
+
+	private static <T, U extends Comparable<U>> U median(Collection<T> values, Function<T, U> f) {
+		int median = values.size() / 2;
+		return values.stream().map(f).sorted().collect(Collectors.toList()).get(median);
+	}
+
+	private static <T> double average(Collection<T> values, ToDoubleFunction<T> f) {
+		return values.stream().mapToDouble(f).average().getAsDouble();
 	}
 
 	public static class Result<T> {

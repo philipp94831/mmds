@@ -50,6 +50,10 @@ public class Spark {
 		return set("spark.executor.memory", memory);
 	}
 
+	public Spark setResultSize(String resultSize) {
+		return set("spark.driver.maxResultSize", resultSize);
+	}
+
 	public static void saveToFile(JavaRDD<String> rdd, String path) throws IOException {
 		File file = new File(path);
 		file.getParentFile().mkdirs();

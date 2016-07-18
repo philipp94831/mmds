@@ -46,9 +46,9 @@ public class CollaborativeFiltering implements Recommender {
 			throw new RuntimeException("Error reading metadata", e);
 		}
 		final JavaRDD<Tuple2<Object, double[]>> userFeatures = jsc.<Tuple2<Object, double[]>>objectFile(
-				fs.makeQualified(filterDir + USER_PATH).toString()).cache();
+				fs.makeQualified(filterDir + USER_PATH).toString()).persist(StorageLevel.MEMORY_AND_DISK());
 		final JavaRDD<Tuple2<Object, double[]>> productFeatures = jsc.<Tuple2<Object, double[]>>objectFile(
-				fs.makeQualified(filterDir + PRODUCT_PATH).toString()).cache();
+				fs.makeQualified(filterDir + PRODUCT_PATH).toString()).persist(StorageLevel.MEMORY_AND_DISK());
 		MatrixFactorizationModel model = new MatrixFactorizationModel(rank, userFeatures.rdd(), productFeatures.rdd());
 		return new CollaborativeFiltering(model);
 	}

@@ -50,7 +50,7 @@ public class MultiRecommender implements Recommender {
 		return add(DEFAULT_WEIGHT, recommender);
 	}
 
-	private List<Recommendation> aggregate(List<Tuple2<Double, List<Recommendation>>> recommendations, int howMany) {
+	private List<Recommendation> aggregate(List<Tuple2<Double, List<Recommendation>>> recommendations) {
 		Map<Integer, List<Double>> values = new HashMap<>();
 		for (Tuple2<Double, List<Recommendation>> t : recommendations) {
 			for (Recommendation r : t._2) {
@@ -59,11 +59,11 @@ public class MultiRecommender implements Recommender {
 					list = new ArrayList<>();
 					values.put(r.getArticle(), list);
 				}
-				list.add(t._1 * r.getPrediction());
+				list.add(r.getPrediction() * t._1());
 			}
 		}
 		return values.entrySet().stream().map(e -> new Recommendation(avg(e.getValue()), e.getKey())).sorted()
-				.limit(howMany).collect(Collectors.toList());
+				.collect(Collectors.toList());
 	}
 
 	private double avg(List<Double> values) {
@@ -72,9 +72,9 @@ public class MultiRecommender implements Recommender {
 
 	@Override
 	public List<Recommendation> recommend(int userId, JavaRDD<Integer> articles, int howMany) {
-		List<Tuple2<Double, List<Recommendation>>> recommendations = recommenders.parallelStream()
+		List<Tuple2<Double, List<Recommendation>>> recommendations = recommenders.stream()
 				.map(t -> new Tuple2<>(t._1, t._2.recommend(userId, articles, 3 * howMany)))
 				.collect(Collectors.toList());
-		return aggregate(recommendations, howMany);
+		return aggregate(recommendations).stream().limit(howMany).collect(Collectors.toList());
 	}
 }
