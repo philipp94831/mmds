@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -122,9 +123,19 @@ public class LDARecommender implements Recommender {
 
 	public static LDARecommender train(JavaSparkContext jsc, String data, int numTopics, int iterations,
 			FileSystem fs) {
+		return train(jsc, data, numTopics, iterations, 1.0, fs);
+	}
+
+	public static LDARecommender train(JavaSparkContext jsc, String data, int numTopics, int iterations,
+			double sampleSize, FileSystem fs) {
+		return train(jsc, data, numTopics, iterations, sampleSize, new Random().nextLong(), fs);
+	}
+
+	public static LDARecommender train(JavaSparkContext jsc, String data, int numTopics, int iterations,
+			double sampleSize, long seed, FileSystem fs) {
 		LDA lda = new LDA().setK(numTopics).setMaxIterations(iterations).setOptimizer("online");
 		JavaPairRDD<Long, Vector> documents = readDocuments(jsc, data, fs);
-		LocalLDAModel model = (LocalLDAModel) lda.run(documents);
+		LocalLDAModel model = (LocalLDAModel) lda.run(documents.sample(false, sampleSize, seed));
 		return new LDARecommender(fitDocuments(model, documents), model);
 	}
 
