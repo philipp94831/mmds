@@ -76,7 +76,7 @@ public class CollaborativeFiltering implements Recommender {
 	public List<Recommendation> recommend(int userId, int howMany) {
 		try {
 			Rating[] recommendations = model.recommendProducts(userId, howMany);
-			return Arrays.stream(recommendations).map(r -> new Recommendation(r.rating(), r.product()))
+			return Arrays.stream(recommendations).parallel().map(r -> new Recommendation(r.rating(), r.product()))
 					.filter(r -> r.getPrediction() >= RECOMMEND_THRESHOLD).collect(Collectors.toList());
 		} catch (NoSuchElementException e) {
 			// user not included in the model

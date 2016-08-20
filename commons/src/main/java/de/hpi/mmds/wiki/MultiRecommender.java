@@ -6,8 +6,10 @@ import scala.Tuple2;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -51,18 +53,42 @@ public class MultiRecommender implements Recommender {
 	}
 
 	private List<Recommendation> aggregate(List<Tuple2<Double, List<Recommendation>>> recommendations) {
-		Map<Integer, List<Double>> values = new HashMap<>();
+		Set<Integer> articles = new HashSet<>();
+		List<Map<Integer, Double>> scores = new ArrayList<>();
+		List<Double> mins = new ArrayList<>();
+		List<Double> maxs = new ArrayList<>();
 		for (Tuple2<Double, List<Recommendation>> t : recommendations) {
+			Map<Integer, Double> recom = new HashMap<>();
+			scores.add(recom);
+			double min = Double.MAX_VALUE;
+			double max = Double.MIN_VALUE;
 			for (Recommendation r : t._2) {
-				List<Double> list = values.get(r.getArticle());
-				if (list == null) {
-					list = new ArrayList<>();
-					values.put(r.getArticle(), list);
+				int article = r.getArticle();
+				articles.add(article);
+				double value = r.getPrediction() * t._1();
+				if(value < min) {
+					min = value;
 				}
-				list.add(r.getPrediction() * t._1());
+				if(value > max) {
+					max = value;
+				}
+				recom.put(article, value);
 			}
+			mins.add(min);
+			maxs.add(max);
 		}
-		return values.entrySet().stream().map(e -> new Recommendation(avg(e.getValue()), e.getKey())).sorted()
+		Map<Integer, Double> values = new HashMap<>();
+		for(int article : articles) {
+			double res = 0.0;
+			int i = 0;
+			for(Map<Integer, Double> score : scores) {
+				double r = score.getOrDefault(article, mins.get(i));
+				res += r / maxs.get(i);
+				i++;
+			}
+			values.put(article, res);
+		}
+		return values.entrySet().stream().map(e -> new Recommendation(e.getValue(), e.getKey())).sorted()
 				.collect(Collectors.toList());
 	}
 

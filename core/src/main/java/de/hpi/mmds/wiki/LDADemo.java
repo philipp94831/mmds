@@ -12,14 +12,14 @@ import java.io.OutputStream;
 
 public class LDADemo {
 
-	private static final String NAME = "advanced_model_10";
+	private static final String NAME = "advanced_model";
 	private static final String MODEL = "ldamodel/" + NAME;
 	public static final String DATA_DIR = "data/";
 	private static final String DOCUMENTS = DATA_DIR + "2012advanced_articles.csv";
 	private static final String TRAINING_DATA = DATA_DIR + "training_new.txt";
 	private static final String TEST_DATA = DATA_DIR + "edits/test*.txt";
 	private static final String GROUND_TRUTH = DATA_DIR + "ground_truth_new.csv";
-	private static final String OUT_FILE = "log/eval_lda_" + NAME + ".txt";
+	private static final String OUT_FILE = "log/eval_lda_" + NAME + "_small.txt";
 	private static final int NUM_TOPICS = 400;
 	private static final int ITERATIONS = 10;
 	public static final String HDFS_HOST = "";
@@ -43,7 +43,7 @@ public class LDADemo {
 				}
 				try (OutputStream out = new FileOutputStream(file)) {
 					Evaluator eval = new Evaluator(r, edits, GROUND_TRUTH, out, fs);
-					eval.evaluate(1000, 5000, 1L);
+					eval.evaluate(1000, 10, 1L);
 				}
 			}
 		} catch (IOException e) {

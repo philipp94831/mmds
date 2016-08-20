@@ -66,7 +66,7 @@ public class LDARecommender implements Recommender {
 		return recommendations.stream().limit(howMany).collect(Collectors.toList());
 	}
 
-	private List<Recommendation> recommend(int howMany, Set<Integer> history) {
+	private <R> List<Recommendation> recommend(int howMany, Set<Integer> history) {
 		List<Tuple2<Integer, Double>> topics = topicsPerDocument.filter(t -> history.contains(t._1().intValue()))
 				.mapToPair(Tuple2::_2).reduceByKey(Double::sum).collect();
 		Map<Integer, List<Tuple2<Long, Double>>> documentsForTopic = getTopDocumentsPerTopic(3 * howMany);
@@ -124,7 +124,7 @@ public class LDARecommender implements Recommender {
 			FileSystem fs) {
 		LDA lda = new LDA().setK(numTopics).setMaxIterations(iterations).setOptimizer("online");
 		JavaPairRDD<Long, Vector> documents = readDocuments(jsc, data, fs);
-		LocalLDAModel model = (LocalLDAModel) lda.run(documents.filter(t -> t._1() % 100 < 10));
+		LocalLDAModel model = (LocalLDAModel) lda.run(documents);
 		return new LDARecommender(fitDocuments(model, documents), model);
 	}
 
@@ -134,18 +134,18 @@ public class LDARecommender implements Recommender {
 	}
 
 	public LDARecommender save(String path, FileSystem fs) {
-		saveModel(path, fs);
-		saveDocuments(path, fs);
+		saveModel(path + MODEL_PATH, fs);
+		saveDocuments(path + DOCUMENT_PATH, fs);
 		return this;
 	}
 
 	public LDARecommender saveDocuments(String path, FileSystem fs) {
-		topicsPerDocument.saveAsObjectFile(fs.makeQualified(path + DOCUMENT_PATH).toString());
+		topicsPerDocument.saveAsObjectFile(fs.makeQualified(path).toString());
 		return this;
 	}
 
 	public LDARecommender saveModel(String path, FileSystem fs) {
-		model.save(topicsPerDocument.context(), fs.makeQualified(path + MODEL_PATH).toString());
+		model.save(topicsPerDocument.context(), fs.makeQualified(path).toString());
 		return this;
 	}
 

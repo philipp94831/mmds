@@ -101,9 +101,11 @@ public class Evaluator {
 				int user = t._1;
 				JavaRDD<Integer> articles = training.getEdits(user);
 				Set<Integer> groundTruth = t._2;
+				long s = System.nanoTime();
 				List<Integer> recommendations = recommender.recommend(user, articles, howMany).stream()
 						.map(Recommendation::getArticle).collect(Collectors.toList());
-				Result<Integer> result = new Result<>(recommendations, groundTruth);
+				long recomTime = System.nanoTime() - s;
+				Result<Integer> result = new Result<>(recommendations, groundTruth, recomTime / 1_000_000);
 				results.put(user, result);
 				i++;
 				writer.write("User: " + user + "\n");
@@ -114,7 +116,12 @@ public class Evaluator {
 				writer.write("AVG Precision: " + average(results.values(), Result::precision) + "\n");
 				writer.write("AVG MAP: " + average(results.values(), Result::meanAveragePrecision) + "\n");
 				writer.write("AVG Recall: " + average(results.values(), Result::recall) + "\n");
+				writer.write("AVG Recall at 100: " + average(results.values(), r -> r.recall(100)) + "\n");
+				writer.write("AVG Recall at 500: " + average(results.values(), r -> r.recall(500)) + "\n");
+				writer.write("AVG Recall at 1000: " + average(results.values(), r -> r.recall(1000)) + "\n");
 				writer.write("AVG F-Measure: " + average(results.values(), Result::fmeasure) + "\n");
+				writer.write("AVG Time: " + average(results.values(), Result::getTime) + "\n");
+				writer.write("Median Time: " + median(results.values(), Result::getTime) + "\n");
 				writer.write("Median Precision: " + median(results.values(), Result::precision) + "\n");
 				writer.write("Median MAP: " + median(results.values(), Result::meanAveragePrecision) + "\n");
 				writer.write("Median Recall: " + median(results.values(), Result::recall) + "\n");
@@ -157,12 +164,18 @@ public class Evaluator {
 		private final List<T> recommendations;
 		private final Set<T> groundTruth;
 		private final Set<T> intersect;
+		private final long time;
 
-		public Result(List<T> recommendations, Set<T> groundTruth) {
+		public Result(List<T> recommendations, Set<T> groundTruth, long time) {
 			this.recommendations = recommendations;
 			this.groundTruth = groundTruth;
 			this.intersect = new HashSet<>(groundTruth);
 			this.intersect.retainAll(recommendations);
+			this.time = time;
+		}
+
+		private long getTime() {
+			return time;
 		}
 
 		public double fmeasure() {
@@ -197,6 +210,12 @@ public class Evaluator {
 					"Mean Average Precision: " + meanAveragePrecision() + "\n" +
 					"Recall: " + recall() + "\n" +
 					"F-Measure: " + fmeasure();
+		}
+
+		public double recall(int at) {
+			Set<T> intersect = recommendations.stream().limit(at).collect(Collectors.toSet());
+			intersect.retainAll(groundTruth);
+			return (double) intersect.size() / groundTruth.size();
 		}
 
 		public double recall() {
