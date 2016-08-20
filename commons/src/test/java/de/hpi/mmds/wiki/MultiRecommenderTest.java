@@ -37,11 +37,11 @@ public class MultiRecommenderTest {
 		Collections.sort(recommendations);
 		assertEquals(3, recommendations.size());
 		assertEquals(1, recommendations.get(0).getArticle());
-		assertEquals(5.0 / 3.0, recommendations.get(0).getPrediction(), DOUBLE_TOLERANCE);
-		assertEquals(3, recommendations.get(1).getArticle());
-		assertEquals(1.0 / 3.0, recommendations.get(1).getPrediction(), DOUBLE_TOLERANCE);
-		assertEquals(2, recommendations.get(2).getArticle());
-		assertEquals(0.5 / 3.0, recommendations.get(2).getPrediction(), DOUBLE_TOLERANCE);
+		assertEquals(3.0, recommendations.get(0).getPrediction(), DOUBLE_TOLERANCE);
+		assertEquals(2, recommendations.get(1).getArticle());
+		assertEquals(0.995, recommendations.get(1).getPrediction(), DOUBLE_TOLERANCE);
+		assertEquals(3, recommendations.get(2).getArticle());
+		assertEquals(0.995, recommendations.get(2).getPrediction(), DOUBLE_TOLERANCE);
 	}
 
 	@Test
@@ -55,11 +55,11 @@ public class MultiRecommenderTest {
 		Collections.sort(recommendations);
 		assertEquals(3, recommendations.size());
 		assertEquals(1, recommendations.get(0).getArticle());
-		assertEquals(5.0 / 3.0, recommendations.get(0).getPrediction(), DOUBLE_TOLERANCE);
-		assertEquals(3, recommendations.get(1).getArticle());
-		assertEquals(1.0 / 3.0, recommendations.get(1).getPrediction(), DOUBLE_TOLERANCE);
-		assertEquals(2, recommendations.get(2).getArticle());
-		assertEquals(0.5 / 3.0, recommendations.get(2).getPrediction(), DOUBLE_TOLERANCE);
+		assertEquals(3.0, recommendations.get(0).getPrediction(), DOUBLE_TOLERANCE);
+		assertEquals(2, recommendations.get(1).getArticle());
+		assertEquals(0.995, recommendations.get(1).getPrediction(), DOUBLE_TOLERANCE);
+		assertEquals(3, recommendations.get(2).getArticle());
+		assertEquals(0.995, recommendations.get(2).getPrediction(), DOUBLE_TOLERANCE);
 	}
 
 	@Test
@@ -73,11 +73,11 @@ public class MultiRecommenderTest {
 		Collections.sort(recommendations);
 		assertEquals(3, recommendations.size());
 		assertEquals(1, recommendations.get(0).getArticle());
-		assertEquals(3.0 / 2.0, recommendations.get(0).getPrediction(), DOUBLE_TOLERANCE);
+		assertEquals(2.0, recommendations.get(0).getPrediction(), DOUBLE_TOLERANCE);
 		assertEquals(2, recommendations.get(1).getArticle());
-		assertEquals(0.5 / 2.0, recommendations.get(1).getPrediction(), DOUBLE_TOLERANCE);
+		assertEquals(0.7475, recommendations.get(1).getPrediction(), DOUBLE_TOLERANCE);
 		assertEquals(3, recommendations.get(2).getArticle());
-		assertEquals(0.5 / 2.0, recommendations.get(2).getPrediction(), DOUBLE_TOLERANCE);
+		assertEquals(0.745, recommendations.get(2).getPrediction(), DOUBLE_TOLERANCE);
 	}
 
 }

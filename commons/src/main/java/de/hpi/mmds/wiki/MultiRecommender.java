@@ -55,6 +55,7 @@ public class MultiRecommender implements Recommender {
 	private List<Recommendation> aggregate(List<Tuple2<Double, List<Recommendation>>> recommendations) {
 		Set<Integer> articles = new HashSet<>();
 		List<Map<Integer, Double>> scores = new ArrayList<>();
+		List<Double> weights = new ArrayList<>();
 		List<Double> mins = new ArrayList<>();
 		List<Double> maxs = new ArrayList<>();
 		for (Tuple2<Double, List<Recommendation>> t : recommendations) {
@@ -65,7 +66,7 @@ public class MultiRecommender implements Recommender {
 			for (Recommendation r : t._2) {
 				int article = r.getArticle();
 				articles.add(article);
-				double value = r.getPrediction() * t._1();
+				double value = r.getPrediction();
 				if(value < min) {
 					min = value;
 				}
@@ -74,6 +75,7 @@ public class MultiRecommender implements Recommender {
 				}
 				recom.put(article, value);
 			}
+			weights.add(t._1());
 			mins.add(min);
 			maxs.add(max);
 		}
@@ -82,8 +84,8 @@ public class MultiRecommender implements Recommender {
 			double res = 0.0;
 			int i = 0;
 			for(Map<Integer, Double> score : scores) {
-				double r = score.getOrDefault(article, mins.get(i));
-				res += r / maxs.get(i);
+				double r = score.getOrDefault(article, 0.99 * mins.get(i));
+				res += r / maxs.get(i) * weights.get(i);
 				i++;
 			}
 			values.put(article, res);
