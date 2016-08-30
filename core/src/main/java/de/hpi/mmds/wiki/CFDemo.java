@@ -1,59 +1,73 @@
 package de.hpi.mmds.wiki;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+
 import de.hpi.mmds.wiki.cf.CollaborativeFiltering;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaSparkContext;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 
 public class CFDemo {
 
-	private static final String NAME = "default";
-	public static final String DATA_DIR = "data/";
-	private static final String FILTER = "filter/" + NAME;
-	private static final String TRAINING_DATA = DATA_DIR + "training_new.txt";
-	private static final String GROUND_TRUTH = DATA_DIR + "ground_truth_new.csv";
-	private static final String OUT_FILE = "log/eval_cf_" + NAME + "_small.txt";
-	private static final int RANK = 25;
-	private static final int ITERATIONS = 10;
-	private static final double LAMBDA = 0.01;
-	private static final double ALPHA = 1.0;
+	@Parameter(names = "-fs", description = "File system to use. May be either an HDFS URL or local", required = true)
+	private String uri = "local";
+	@Parameter(names = "--help", help = true)
+	private boolean help = false;
+
+	@Parameter(names = "-path", description = "Path to save and read model from", required = true)
+	private String FILTER;
+	@Parameter(names = "-data", description = "Path to edit data")
+	private String DATA;
+	@Parameter(names = "-rank", description = "Rank of matrix to use for CF")
+	private int RANK = 25;
+	@Parameter(names = "-iterations", description = "Number of iterations for CF")
+	private int ITERATIONS = 10;
+	@Parameter(names = "-lambda", description = "Regularization parameter for CF")
+	private double LAMBDA = 0.01;
+	@Parameter(names = "-alpha", description = "Weighting parameter for CF")
+	private double ALPHA = 1.0;
+
+	@Parameter(names = "-history", description = "Path to historical data to use for evaluation")
+	private String TRAINING_DATA;
+	@Parameter(names = "-test", description = "Path to test data for evaluation")
+	private String TEST_DATA;
+	@Parameter(names = "-log", description = "Path to file where evaluation results should be logged")
+	private String OUT_FILE;
+	@Parameter(names = "-evaluate", description = "Evaluate model using ground truth and historical data")
+	private boolean evaluate = false;
 
 	public static void main(String[] args) {
-		try (FileSystem fs = FileSystem.getLocal()) {
+		CFDemo demo = new CFDemo();
+		JCommander jc = new JCommander(demo, args);
+		if(demo.help) {
+			jc.usage();
+			System.exit(0);
+		}
+		demo.run();
+	}
+
+	private void run() {
+		try (FileSystem fs = FileSystem.get(uri)) {
 			if (!fs.exists(FILTER)) {
 				try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").setMaster("local[4]").setWorkerMemory("2g")
 						.context()) {
 					long start = System.nanoTime();
-					CollaborativeFiltering.train(jsc, TRAINING_DATA, RANK, ITERATIONS, LAMBDA, ALPHA, fs)
-							.save(FILTER, fs);
+					CollaborativeFiltering.train(jsc, DATA, RANK, ITERATIONS, LAMBDA, ALPHA, fs).save(FILTER, fs);
 					long duration = System.nanoTime() - start;
-					File result = new File("result.txt");
-					if (result.exists()) {
-						FileUtils.forceDelete(result);
-					}
-					try (FileWriter out = new FileWriter(result)) {
-						out.write("Took " + (duration / 1_000_000) + "ms");
-					}
+					System.out.println("Took " + (duration / 1_000_000) + "ms");
 				}
 			}
-			try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").setMaster("local[4]").setWorkerMemory("2g")
-					.context()) {
-				Edits edits = new Edits(jsc, TRAINING_DATA, fs);
-				Recommender r = CollaborativeFiltering.load(jsc, FILTER, fs);
-				File file = new File(OUT_FILE);
-				file.getParentFile().mkdirs();
-				if (file.exists()) {
-					FileUtils.forceDelete(file);
-				}
-				try (OutputStream out = new FileOutputStream(file)) {
-					Evaluator eval = new Evaluator(r, edits, GROUND_TRUTH, out, fs);
-					eval.evaluate(1000, 10, 1L);
+			if (evaluate) {
+				try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").setMaster("local[4]").setWorkerMemory("2g")
+						.context()) {
+					Edits edits = new Edits(jsc, TRAINING_DATA, fs);
+					Edits test = new Edits(jsc, TEST_DATA, fs);
+					Recommender r = CollaborativeFiltering.load(jsc, FILTER, fs);
+					File file = new File(OUT_FILE);
+					new EvaluatorDemo(file, r, test, edits).run();
 				}
 			}
 		} catch (IOException e) {

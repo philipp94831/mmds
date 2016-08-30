@@ -1,4 +1,4 @@
-package de.hpi.mmds.parsing.revision;
+package de.hpi.mmds.parsing.categories;
 
 import de.hpi.mmds.wiki.Spark;
 

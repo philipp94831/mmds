@@ -26,6 +26,9 @@ public class FileSystem implements Closeable {
 	}
 
 	public static FileSystem get(String uri) throws IOException {
+		if(uri.equals("local")) {
+			return getLocal();
+		}
 		return FileSystem.get(URI.create(uri));
 	}
 

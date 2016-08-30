@@ -20,7 +20,6 @@ public class MultiRecommender implements Recommender {
 
 	public static final double DEFAULT_WEIGHT = 1.0;
 	private final List<Tuple2<Double, Recommender>> recommenders = new ArrayList<>();
-	private double summedWeights = 0.0;
 
 	/**
 	 * Add a recommender with a certain weight.
@@ -33,7 +32,6 @@ public class MultiRecommender implements Recommender {
 	 * @return Returns {@code this} to enable chaining.
 	 */
 	public MultiRecommender add(double weight, Recommender recommender) {
-		summedWeights += weight;
 		recommenders.add(new Tuple2<>(weight, recommender));
 		return this;
 	}
@@ -80,6 +78,7 @@ public class MultiRecommender implements Recommender {
 			maxs.add(max);
 		}
 		Map<Integer, Double> values = new HashMap<>();
+		// build average by weighting values with regard to max values. smoothing for missing values
 		for(int article : articles) {
 			double res = 0.0;
 			int i = 0;
@@ -92,10 +91,6 @@ public class MultiRecommender implements Recommender {
 		}
 		return values.entrySet().stream().map(e -> new Recommendation(e.getValue(), e.getKey())).sorted()
 				.collect(Collectors.toList());
-	}
-
-	private double avg(List<Double> values) {
-		return values.stream().mapToDouble(d -> d).sum() / summedWeights;
 	}
 
 	@Override

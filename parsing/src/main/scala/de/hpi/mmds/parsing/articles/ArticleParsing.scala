@@ -4,6 +4,7 @@ package de.hpi.mmds.parsing.articles
 import java.io.File
 import java.nio.charset.StandardCharsets
 
+import com.beust.jcommander.{JCommander, Parameter}
 import de.hpi.mmds.wiki.Spark
 import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkContext
@@ -107,10 +108,27 @@ class ArticleParser(input: String, output: String) {
 }
 
 object ArticleParser {
+
+  object Args {
+    // Declared as var because JCommander assigns a new collection declared
+    // as java.util.List because that's what JCommander will replace it with.
+    // It'd be nice if JCommander would just use the provided List so this
+    // could be a val and a Scala LinkedList.
+    @Parameter(names = Array("-input"), description = "Input data dir", required = true)
+    var input: String = null
+    @Parameter(names = Array("-output"), description = "Output data dir", required = true)
+    var output: String = null
+    @Parameter(names = Array("--help"), help = true)
+    var help: Boolean = false
+  }
+
   def main(args: Array[String]) {
-    val input = if (args.length > 0) args(0) else "data/enwiki-20160407-pages-articles.xml"
-    val output = if (args.length > 1) args(1) else "data/advanced_articles"
-    new ArticleParser(input, output).run()
+    val jc = new JCommander(Args, args.toArray: _*)
+    if (Args.help) {
+      jc.usage
+      System.exit(0)
+    }
+    new ArticleParser(Args.input, Args.output).run()
   }
 
 }

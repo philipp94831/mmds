@@ -3,14 +3,13 @@ package de.hpi.mmds.wiki;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
-import de.hpi.mmds.wiki.cf.CollaborativeFiltering;
 import de.hpi.mmds.wiki.lda.LDARecommender;
 
 import org.apache.spark.api.java.JavaSparkContext;
 
 import java.io.IOException;
 
-public class App {
+public class LDAApp {
 
 	@Parameter(names = "-fs", description = "File system to use. May be either an HDFS URL or local", required = true)
 	private String uri = "local";
@@ -21,13 +20,11 @@ public class App {
 	@Parameter(names = "-data", description = "Path to historical data to make recommendations", required = true)
 	private String dataDir;
 
-	@Parameter(names = "-cf", description = "Path to CF model", required = true)
-	private String cfDir;
-	@Parameter(names = "-lda", description = "Path to LDA model", required = true)
+	@Parameter(names = "-path", description = "Path to LDA model", required = true)
 	private String ldaDir;
-	
-	public static void main(String[] args) {		
-		App app = new App();
+
+	public static void main(String[] args) {
+		LDAApp app = new LDAApp();
 		JCommander jc = new JCommander(app, args);
 		if(app.help) {
 			jc.usage();
@@ -39,12 +36,12 @@ public class App {
 	public void run() {
 		try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").setMaster("local[4]").setWorkerMemory("2g").context();
 				FileSystem fs = FileSystem.get(uri)) {
-			MultiRecommender recommender = new MultiRecommender().add(CollaborativeFiltering.load(jsc, cfDir, fs))
-					.add(1.0, LDARecommender.load(jsc, ldaDir, fs));
+			LDARecommender recommender = LDARecommender.load(jsc, ldaDir, fs);
 			Edits data = new Edits(jsc, dataDir, fs);
 			new ConsoleRecommenderDemo(recommender, data, howMany).run();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
+
 }

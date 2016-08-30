@@ -1,6 +1,6 @@
 package de.hpi.mmds.wiki.parsing;
 
-import de.hpi.mmds.parsing.revision.Csv;
+import de.hpi.mmds.parsing.categories.Csv;
 import org.junit.Assert;
 
 import java.util.Arrays;

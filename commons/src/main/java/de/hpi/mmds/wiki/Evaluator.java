@@ -35,6 +35,14 @@ public class Evaluator {
 	private final Recommender recommender;
 	private final JavaPairRDD<Integer, Set<Integer>> groundTruths;
 
+	/**
+	 * Evaluator using a specified ground truth to evaluate a recommender in terms of precision and recall
+	 * @param recommender
+	 * @param training
+	 * @param ground_truth
+	 * @param out
+	 * @param fs
+	 */
 	public Evaluator(Recommender recommender, Edits training, String ground_truth, OutputStream out, FileSystem fs) {
 		this.recommender = recommender;
 		this.training = training.cache();
@@ -51,6 +59,13 @@ public class Evaluator {
 		this.out = out;
 	}
 
+	/**
+	 * Evaluator using test data to generate the ground truth
+	 * @param recommender
+	 * @param test
+	 * @param training
+	 * @param out
+	 */
 	public Evaluator(Recommender recommender, Edits test, Edits training, OutputStream out) {
 		this.recommender = recommender;
 		this.training = training.cache();
@@ -90,6 +105,13 @@ public class Evaluator {
 		return evaluate(num, howMany, new Random().nextLong());
 	}
 
+	/**
+	 * Start evaluation by choosing a random sample of users and make recommendations for them
+	 * @param num
+	 * @param howMany
+	 * @param seed
+	 * @return
+	 */
 	public Map<Integer, Result> evaluate(int num, int howMany, long seed) {
 		Map<Integer, Result> results = new HashMap<>();
 		int i = 0;
