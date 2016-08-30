@@ -9,6 +9,7 @@ import de.hpi.mmds.wiki.Spark
 import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.storage.StorageLevel
 
 // import xml stuff
 import com.databricks.spark.xml.XmlInputFormat
@@ -34,8 +35,12 @@ class ArticleParser(input: String, output: String) {
     sc.setLogLevel("ERROR")
 
     val parsed = parse(sc, input)
+      .persist(StorageLevel.MEMORY_AND_DISK)
 
     val (vectorized, vocab) = vectorize(parsed, 10000)
+
+    vectorized
+      .persist(StorageLevel.MEMORY_AND_DISK)
 
     Spark.saveToFile(vectorized, output)
 
@@ -64,6 +69,7 @@ class ArticleParser(input: String, output: String) {
       .filter(_.getNamespace == 0)
       .filter(!_.isRedirect)
       .filter(!_.isDisambugation)
+      .persist(StorageLevel.MEMORY_AND_DISK)
       .toJavaRDD().map(new AdvancedWikiTextParser).rdd.filter(_ != null)
 
     rdd_preprocessing
