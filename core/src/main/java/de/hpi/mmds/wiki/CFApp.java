@@ -11,7 +11,7 @@ import java.io.IOException;
 
 public class CFApp {
 
-	@Parameter(names = "-fs", description = "File system to use. May be either an HDFS URL or local", required = true)
+	@Parameter(names = "-fs", description = "File system to use. May be either an HDFS URL or local")
 	private String uri = "local";
 	@Parameter(names = "--help", help = true)
 	private boolean help = false;

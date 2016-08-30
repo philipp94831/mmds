@@ -12,7 +12,7 @@ import java.io.IOException;
 
 public class LDADemo {
 
-	@Parameter(names = "-fs", description = "File system to use. May be either an HDFS URL or local", required = true)
+	@Parameter(names = "-fs", description = "File system to use. May be either an HDFS URL or local")
 	private String uri = "local";
 	@Parameter(names = "--help", help = true)
 	private boolean help = false;
@@ -50,12 +50,18 @@ public class LDADemo {
 	private void run() {
 		try (FileSystem fs = FileSystem.get(uri)) {
 			if (!fs.exists(MODEL)) {
+				if (DOCUMENTS == null) {
+					throw new IllegalArgumentException("Please specify data to build the model");
+				}
 				try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").setMaster("local[4]").setWorkerMemory("1g")
 						.setResultSize("6g").context()) {
 					LDARecommender.train(jsc, DOCUMENTS, NUM_TOPICS, ITERATIONS, sampleSize, fs).save(MODEL, fs);
 				}
 			}
 			if (evaluate) {
+				if (OUT_FILE == null || TRAINING_DATA == null || TEST_DATA == null) {
+					throw new IllegalArgumentException("Please specify an output file, training data and test data");
+				}
 				try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").setMaster("local[4]").setWorkerMemory("2g")
 						.context()) {
 					Recommender r = LDARecommender.load(jsc, MODEL, fs);

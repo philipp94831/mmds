@@ -37,7 +37,7 @@ class ArticleParser(input: String, output: String) {
 
     val (vectorized, vocab) = vectorize(parsed, 10000)
 
-    Spark.saveToFile(vectorized, output + ".csv")
+    Spark.saveToFile(vectorized, output)
 
     FileUtils.writeStringToFile(new File(output + "-vocab.txt"), vocab.mkString(","), StandardCharsets.UTF_8)
   }

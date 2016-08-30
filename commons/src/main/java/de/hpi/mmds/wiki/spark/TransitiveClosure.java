@@ -8,6 +8,7 @@ import scala.Tuple2;
 import static de.hpi.mmds.wiki.spark.SparkFunctions.identity;
 import static de.hpi.mmds.wiki.spark.SparkFunctions.swap;
 
+@Deprecated
 public class TransitiveClosure {
 
 	public static <T> JavaRDD<Tuple2<T, T>> compute(JavaRDD<Tuple2<T, T>> edges) {

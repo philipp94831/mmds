@@ -28,7 +28,7 @@ public class EvaluatorDemo {
 		}
 		try (OutputStream out = new FileOutputStream(file)) {
 			Evaluator eval = new Evaluator(recommender, test, edits, out);
-			eval.evaluate(1000, 10, 1L);
+			eval.evaluate(1000, 5000, 1L);
 		}
 	}
 

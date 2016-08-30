@@ -1,12 +1,11 @@
 package de.hpi.mmds.wiki.lda
 
-import scala.collection.mutable
-import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.mllib.clustering.LDA
-import org.apache.spark.mllib.clustering.DistributedLDAModel
-import org.apache.spark.mllib.linalg.{SparseVector, Vector, Vectors}
+import org.apache.spark.mllib.clustering.{DistributedLDAModel, LDA}
+import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
 
+@Deprecated
 class LatentDirichletAllocation(input: String, output: String, num_topics: Int) {
   val sc = {
     // If we use spark-submit, the SparkContext will be configured for us.
@@ -69,6 +68,7 @@ class LatentDirichletAllocation(input: String, output: String, num_topics: Int) 
   }
 }
 
+@Deprecated
 object LatentDirichletAllocation {
   def main(args: Array[String]): Unit = {
     if (args.isEmpty) {

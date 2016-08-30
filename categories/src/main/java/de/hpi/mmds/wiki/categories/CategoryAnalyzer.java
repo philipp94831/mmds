@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Deprecated
 public class CategoryAnalyzer implements Recommender {
 
 	private final JavaPairRDD<Integer, Set<Recommendation>> similarities;

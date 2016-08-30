@@ -67,6 +67,12 @@ public class EditParser {
 	private void run() throws IOException, ParseException {
 		long start = System.nanoTime();
 		parseRaw();
+		aggregate();
+		long time = System.nanoTime() - start;
+		System.out.println("Total time: " + time / 1_000_000 + "ms");
+	}
+
+	private void aggregate() throws ParseException, IOException {
 		Date threshold = new SimpleDateFormat("dd.MM.yyyy").parse(dateThreshold);
 		Set<Long> bots = new HashSet<>();
 		try (BufferedReader br = new BufferedReader(new FileReader("data/users.txt"))) {
@@ -80,22 +86,22 @@ public class EditParser {
 		}
 		try (JavaSparkContext jsc = Spark.newApp(EditParser.class.getName()).setMaster("local[4]").setWorkerMemory("2g")
 				.context()) {
-			File[] files = new File(getTempDir()).listFiles();
+			File dir = new File(getTempDir());
+			File[] files = dir.listFiles();
 			for (File file : files) {
 				if (file.isFile()) {
 					JavaRDD<Revision> revisions = jsc.textFile(file.getPath()).map(EditParser::parseRevision)
 							.filter(v1 -> !(bots.contains(v1.getUserId()) || v1.isMinor()));
 					revisions.cache();
 					JavaRDD<Revision> test = revisions.filter(v1 -> v1.getTimestamp().compareTo(threshold) >= 0);
-					aggregate(OUTPUT_DIR + "test_" + file.getName(), test);
+					aggregate(OUTPUT_DIR + "/test_" + file.getName(), test);
 					JavaRDD<Revision> training = revisions.filter(v1 -> v1.getTimestamp().compareTo(threshold) < 0);
-					aggregate(OUTPUT_DIR + "training_" + file.getName(), training);
+					aggregate(OUTPUT_DIR + "/training_" + file.getName(), training);
 					revisions.unpersist();
 				}
 			}
+			FileUtils.forceDelete(dir);
 		}
-		long time = System.nanoTime() - start;
-		System.out.println("Total time: " + time / 1_000_000 + "ms");
 	}
 
 	private void parseRaw() {
@@ -103,8 +109,10 @@ public class EditParser {
 		try {
 			Document raw = Jsoup.connect(URL + version + "/").get();
 			Elements elements = raw.select("body > ul > li:nth-child(10) > ul > li.file > a");
-			new File(tmpDir).mkdir();
-			EditWriter out = new EditWriter(tmpDir + "data", 51, 51_000_000L);
+			File dir = new File(tmpDir);
+			dir.mkdir();
+			FileUtils.cleanDirectory(dir);
+			EditWriter out = new EditWriter(tmpDir + "/data", 51, 51_000_000L);
 			EditHandler handler = new EditHandler(out);
 			Stax2Parser parser = new Stax2Parser(handler);
 			List<Element> files = new ArrayList<>();
@@ -124,15 +132,14 @@ public class EditParser {
 					java.net.URL url = new URL("https://dumps.wikimedia.org" + _url);
 					FileUtils.copyURLToFile(url, file);
 				}
-				InputStream in = new GZIPInputStream(new FileInputStream(file));
-				parser.parse(in);
+				try(InputStream in = new GZIPInputStream(new FileInputStream(file))) {
+					parser.parse(in);
+				} catch (XMLStreamException e) {
+				}
 				i++;
 			}
 			handler.close();
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (XMLStreamException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -147,7 +154,7 @@ public class EditParser {
 
 	private static void aggregate(String fname, JavaRDD<Revision> revisions) {
 		Iterator<String> text = revisions.mapToPair(
-				t -> new Tuple2<>(new Tuple2<>(t.getUserId(), t.getArticleId()), new Tuple2<>(1, t.getTextLength())))
+				t -> new Tuple2<>(new Tuple2<>(t.getUserId(), t.getArticleId()), new Tuple2<>(t.getTextLength(), 1)))
 				.reduceByKey((t1, t2) -> new Tuple2<>(t1._1 + t2._1, t1._2 + t2._2))
 				.map(v1 -> v1._1._1 + "," + v1._1._2 + "," + v1._2._1 + "," + v1._2._2).toLocalIterator();
 		File outf = new File(fname);

@@ -12,7 +12,7 @@ import java.io.IOException;
 
 public class App {
 
-	@Parameter(names = "-fs", description = "File system to use. May be either an HDFS URL or local", required = true)
+	@Parameter(names = "-fs", description = "File system to use. May be either an HDFS URL or local")
 	private String uri = "local";
 	@Parameter(names = "--help", help = true)
 	private boolean help = false;
@@ -40,7 +40,7 @@ public class App {
 		try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").setMaster("local[4]").setWorkerMemory("2g").context();
 				FileSystem fs = FileSystem.get(uri)) {
 			MultiRecommender recommender = new MultiRecommender().add(CollaborativeFiltering.load(jsc, cfDir, fs))
-					.add(1.0, LDARecommender.load(jsc, ldaDir, fs));
+					.add(LDARecommender.load(jsc, ldaDir, fs));
 			Edits data = new Edits(jsc, dataDir, fs);
 			new ConsoleRecommenderDemo(recommender, data, howMany).run();
 		} catch (IOException e) {

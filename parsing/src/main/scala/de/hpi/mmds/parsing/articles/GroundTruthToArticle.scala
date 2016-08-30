@@ -1,13 +1,10 @@
 package de.hpi.mmds.parsing.articles
 
-import scala.collection.mutable
-import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.mllib.linalg.{SparseVector, Vector, Vectors}
+import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.SparkContext._
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.Row
+import org.apache.spark.{SparkConf, SparkContext}
 
+@Deprecated
 class GroundTruthToArticles(ground_truth: String, articles: String, output: String) {
   val sc = {
     // If we use spark-submit, the SparkContext will be configured for us.
@@ -61,6 +58,7 @@ class GroundTruthToArticles(ground_truth: String, articles: String, output: Stri
   }
 }
 
+@Deprecated
 object GroundTruthToArticles {
   def main(args: Array[String]): Unit = {    
     if (args.isEmpty) {

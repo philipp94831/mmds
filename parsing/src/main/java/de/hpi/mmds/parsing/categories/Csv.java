@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Deprecated
 public class Csv {
 
 	private static final int STATE_OUTSIDE = 1;

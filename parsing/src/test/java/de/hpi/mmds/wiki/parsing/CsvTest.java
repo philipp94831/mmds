@@ -1,13 +1,14 @@
 package de.hpi.mmds.wiki.parsing;
 
 import de.hpi.mmds.parsing.categories.Csv;
+
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
-
+@Deprecated
 public class CsvTest {
 
 	@Test

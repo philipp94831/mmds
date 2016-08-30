@@ -15,7 +15,7 @@ class EditWriter {
 
 	public EditWriter(String fileName, int numPartitions, long max) throws IOException {
 		for (int i = 0; i < numPartitions; i++) {
-			File file = new File(fileName + i + ".txt");
+			File file = new File(fileName + i + ".csv");
 			file.getParentFile().mkdirs();
 			if (file.exists()) {
 				FileUtils.forceDelete(file);

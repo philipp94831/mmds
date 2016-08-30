@@ -1,6 +1,8 @@
 package de.hpi.mmds.wiki;
 
 import java.util.List;
+import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class ConsoleRecommenderDemo {
 
@@ -15,16 +17,19 @@ public class ConsoleRecommenderDemo {
 	}
 
 	public void run() {
+		Scanner in = new Scanner(System.in);
+		System.out.println("Quit with \\q");
 		while(true) {
-			String in = System.console().readLine("Enter user id: ");
-			if(in.equals("\\q")) {
-				System.exit(0);
+			System.out.println("Enter user id: ");
+			String input = in.next();
+			if(input.equals("\\q")) {
+				return;
 			}
 			try {
-				int user = Integer.parseInt(in);
+				int user = Integer.parseInt(input);
 				List<Recommendation> result = recommender.recommend(user, data.getEdits(user), howMany);
 				System.out.println("Recommendations for user " +  user + ":");
-				System.out.println(result);
+				System.out.println(result.stream().map(Recommendation::getArticle).collect(Collectors.toList()));
 			} catch (NumberFormatException e) {
 				System.out.println("Invalid user id");
 			}

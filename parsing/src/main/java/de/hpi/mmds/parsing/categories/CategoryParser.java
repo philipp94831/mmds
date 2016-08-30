@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
+@Deprecated
 public class CategoryParser {
 
 	private static final String SPARK_CONTEXT_NAME = "MMDS Wiki";

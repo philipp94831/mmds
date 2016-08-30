@@ -12,7 +12,7 @@ import java.io.IOException;
 
 public class CFDemo {
 
-	@Parameter(names = "-fs", description = "File system to use. May be either an HDFS URL or local", required = true)
+	@Parameter(names = "-fs", description = "File system to use. May be either an HDFS URL or local")
 	private String uri = "local";
 	@Parameter(names = "--help", help = true)
 	private boolean help = false;
@@ -42,7 +42,7 @@ public class CFDemo {
 	public static void main(String[] args) {
 		CFDemo demo = new CFDemo();
 		JCommander jc = new JCommander(demo, args);
-		if(demo.help) {
+		if (demo.help) {
 			jc.usage();
 			System.exit(0);
 		}
@@ -52,6 +52,9 @@ public class CFDemo {
 	private void run() {
 		try (FileSystem fs = FileSystem.get(uri)) {
 			if (!fs.exists(FILTER)) {
+				if (DATA == null) {
+					throw new IllegalArgumentException("Please specify data to build the model");
+				}
 				try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").setMaster("local[4]").setWorkerMemory("2g")
 						.context()) {
 					long start = System.nanoTime();
@@ -61,6 +64,9 @@ public class CFDemo {
 				}
 			}
 			if (evaluate) {
+				if (OUT_FILE == null || TRAINING_DATA == null || TEST_DATA == null) {
+					throw new IllegalArgumentException("Please specify an output file, training data and test data");
+				}
 				try (JavaSparkContext jsc = Spark.newApp("MMDS Wiki").setMaster("local[4]").setWorkerMemory("2g")
 						.context()) {
 					Edits edits = new Edits(jsc, TRAINING_DATA, fs);
